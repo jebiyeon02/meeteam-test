@@ -1,5 +1,5 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import SignUpForm from '@/components/features/auth/SignUpForm';
 
 export default function Page() {
-  return <PlannedPage title="회원가입" />;
+  return <SignUpForm />;
 }

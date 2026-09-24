@@ -8,6 +8,7 @@ import { useLoginModalStore } from '@/stores/useLoginModalStore';
 export default function LoginPromptModal() {
   const isOpen = useLoginModalStore((state) => state.isOpen);
   const title = useLoginModalStore((state) => state.title);
+  const redirectPath = useLoginModalStore((state) => state.redirectPath);
   const closeLoginModal = useLoginModalStore((state) => state.closeLoginModal);
 
   return (
@@ -19,7 +20,7 @@ export default function LoginPromptModal() {
             닫기
           </BaseButton>
           <Link
-            href="/auth/login"
+            href={`/auth/login${redirectPath ? `?next=${encodeURIComponent(redirectPath)}` : ''}`}
             onClick={closeLoginModal}
             className="inline-flex items-center rounded-xl bg-mt-primary px-4 text-sm font-bold text-mt-white"
           >

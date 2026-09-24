@@ -1,6 +1,6 @@
-# meeTeam 프론트엔드 · 3주차 기준
+# meeTeam 프론트엔드 · 4주차 기준
 
-이 브랜치는 3주차의 **프론트엔드 초기 구조와 공통 UI 설계**만 보여주는 배포용 스냅샷입니다. 로그인, 프로필 조회·수정, 프로젝트 생성·지원·관리, 팀원 검색, 알림 조회 등 실제 도메인 기능과 API 연동은 아직 구현하지 않았습니다. 각 경로는 준비 화면을 표시합니다.
+3주차 공통 UI 위에 인증 상태 복원, 보호 경로, 세종대 포털 로그인과 가입, 내 프로필 조회·수정, 공개 프로필 조회를 구현했습니다. 프로젝트 등록·지원·관리, 팀원 검색, 알림 등은 아직 준비 화면입니다.
 
 ## 구조
 
@@ -8,13 +8,15 @@
 - `app/(with-nav)`: 내비게이션을 공유하는 화면과 동적 경로
 - `components/features`: 도메인별 UI와 API 파일의 위치
 - `components/shared`: 버튼, 입력창, 드롭다운, 모달, 태그, 스켈레톤, 토스트 등 공통 UI
-- `stores`: 인증 준비 상태와 공통 모달·토스트 상태
+- `stores`: 인증 상태와 공통 모달·토스트 상태
+- `components/features/auth`: 쿠키 기반 세션 복원, 로그인·가입, 보호 경로
+- `components/features/profile`: 프로필 API, 입력 검증, 조회·수정 화면
 - `components/features/{domain}/store.ts`: 도메인별 클라이언트 UI 상태
 - `app/globals.css`: Tailwind 색상 토큰
 - `app/(with-nav)/showcase`: 배포된 웹에서 볼 수 있는 공통 UI 쇼케이스
 - `stories`: 컴포넌트 상태와 화면 구조를 따로 살펴보는 Storybook 예시
 
-공개 화면과 인증 필요 화면은 각 준비 화면에 구분하여 표시했습니다. 실제 인증 세션 복원, 접근 제어, 입력 검증과 저장·오류 처리는 다음 주차 범위입니다.
+인증은 백엔드의 HttpOnly 쿠키를 사용합니다. Next.js의 `/api/*` 경유 경로가 백엔드 요청을 전달하고 쿠키 도메인을 현재 프론트엔드 도메인으로 맞춥니다. 페이지를 다시 열면 `/api/v1/members/me`를 조회하고, 만료된 세션은 `/api/v1/auth/refresh`로 한 번 갱신합니다. 프로필 수정은 백엔드의 multipart `memberInfo`/`profileImage` 형식으로 전송합니다.
 
 ## 실행
 
@@ -22,6 +24,8 @@
 npm ci
 npm run dev
 ```
+
+로컬에서는 `.env`에 `API_BASE_URL` 또는 기존 `NEXT_PUBLIC_API_BASE_URL`을 설정합니다. 설정하지 않으면 `https://api.meeteam.alom-sejong.com`을 사용합니다. 실제 로그인과 프로필 저장에는 해당 API가 가동 중이어야 합니다.
 
 브라우저에서 `/showcase`로 이동하면 3주차 공통 UI를 직접 눌러볼 수 있습니다.
 Storybook은 다음 명령으로 실행합니다.
@@ -31,6 +35,4 @@ npm run storybook
 ```
 
 Storybook 정적 산출물이 필요하면 `npm run build-storybook`을 사용합니다.
-MSW는 아직 실제 API 흐름이 없으므로 포함하지 않았습니다.
-
-Vercel에서는 `sejong-tmp` 브랜치를 배포 대상으로 선택하면 됩니다.
+Vercel은 `jebiyeon02/meeteam-test` 저장소의 `main` 브랜치를 배포합니다.

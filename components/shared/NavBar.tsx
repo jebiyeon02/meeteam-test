@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Settings } from 'lucide-react';
 import AppLogo from '@/components/shared/AppLogo';
+import { logout } from '@/components/features/auth/authApi';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useToastStore } from '@/stores/useToastStore';
 
 const NAV_ITEMS = [
   { href: '/showcase', label: '공통 UI' },
@@ -15,6 +18,20 @@ const NAV_ITEMS = [
 
 export function NavBar() {
   const pathname = usePathname();
+  const isSessionReady = useAuthStore((state) => state.isSessionReady);
+  const user = useAuthStore((state) => state.user);
+  const clearSession = useAuthStore((state) => state.clearSession);
+  const showToast = useToastStore((state) => state.showToast);
+
+  async function handleLogout() {
+    try {
+      await logout();
+      clearSession();
+      showToast({ tone: 'success', message: '로그아웃했습니다.' });
+    } catch {
+      showToast({ tone: 'error', message: '로그아웃에 실패했습니다. 다시 시도해 주세요.' });
+    }
+  }
 
   return (
     <nav className="border-b border-mt-border bg-mt-white">
@@ -49,12 +66,28 @@ export function NavBar() {
           >
             <Settings className="h-5 w-5" strokeWidth={1.8} />
           </Link>
-          <Link
-            href="/auth/login"
-            className="rounded-full border border-mt-border px-4 py-2 text-sm font-semibold text-mt-primary"
-          >
-            로그인
-          </Link>
+          {isSessionReady &&
+            (user ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden text-sm text-mt-text-secondary sm:inline">
+                  {user.name}님
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="rounded-full border border-mt-border px-4 py-2 text-sm font-semibold text-mt-primary"
+                >
+                  로그아웃
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="rounded-full border border-mt-border px-4 py-2 text-sm font-semibold text-mt-primary"
+              >
+                로그인
+              </Link>
+            ))}
         </div>
       </div>
     </nav>

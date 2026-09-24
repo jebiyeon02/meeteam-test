@@ -1,5 +1,5 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import ProfileEditor from '@/components/features/profile/ProfileEditor';
 
 export default function Page() {
-  return <PlannedPage title="내 프로필" />;
+  return <ProfileEditor />;
 }

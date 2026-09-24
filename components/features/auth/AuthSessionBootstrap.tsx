@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 export default function AuthSessionBootstrap() {
-  const finishSessionBootstrap = useAuthStore((state) => state.finishSessionBootstrap);
+  const restoreSession = useAuthStore((state) => state.restoreSession);
 
   useEffect(() => {
-    finishSessionBootstrap();
-  }, [finishSessionBootstrap]);
+    void restoreSession();
+  }, [restoreSession]);
 
   return null;
 }
