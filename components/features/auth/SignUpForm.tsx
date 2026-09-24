@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BaseButton from '@/components/shared/BaseButton';
@@ -14,6 +14,7 @@ import {
   getMyProfile,
   type JobOption,
 } from '@/components/features/profile/profileApi';
+import { profileImageSchema } from '@/components/features/profile/schema';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useToastStore } from '@/stores/useToastStore';
 
@@ -35,6 +36,7 @@ export default function SignUpForm() {
   const [image, setImage] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const savedCode = sessionStorage.getItem('sejongRegistrationCode');
@@ -57,6 +59,23 @@ export default function SignUpForm() {
     [options, positionId],
   );
   const selectedPosition = selectedField?.positions.find((position) => position.id === positionId);
+
+  function changeImage(file: File | null) {
+    if (!file) {
+      setImage(null);
+      setErrors((current) => ({ ...current, image: '' }));
+      return;
+    }
+    const parsed = profileImageSchema.safeParse(file);
+    if (!parsed.success) {
+      setImage(null);
+      setErrors((current) => ({ ...current, image: parsed.error.issues[0].message }));
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      return;
+    }
+    setImage(parsed.data);
+    setErrors((current) => ({ ...current, image: '' }));
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,8 +142,10 @@ export default function SignUpForm() {
   if (!code) {
     return (
       <section className="mx-auto max-w-md space-y-4 rounded-2xl border border-mt-border bg-mt-white p-8 text-center">
-        <h1 className="text-xl font-bold">포털 인증이 필요합니다</h1>
-        <p className="text-sm text-mt-text-secondary">먼저 세종대 포털 계정으로 로그인해 주세요.</p>
+        <h1 className="text-xl font-bold">데모 로그인이 필요합니다</h1>
+        <p className="text-sm text-mt-text-secondary">
+          먼저 신규 가입 데모 계정으로 로그인해 주세요.
+        </p>
         <Link
           href="/auth/login"
           className="inline-flex rounded-xl bg-mt-primary px-4 py-2 text-sm font-bold text-mt-white"
@@ -150,7 +171,7 @@ export default function SignUpForm() {
       <header>
         <h1 className="text-2xl font-bold">프로필 만들기</h1>
         <p className="mt-2 text-sm text-mt-text-secondary">
-          포털 인증을 완료했습니다. 기본 정보를 입력해 주세요.
+          데모 인증을 완료했습니다. 기본 정보를 입력해 주세요.
         </p>
       </header>
       <form
@@ -268,12 +289,19 @@ export default function SignUpForm() {
             />
           </BaseField>
         </div>
-        <BaseField label="프로필 이미지" htmlFor="signup-image" required={false}>
+        <BaseField
+          label="프로필 이미지"
+          htmlFor="signup-image"
+          required={false}
+          hintText={image?.name || 'JPG, PNG, WebP · 1MB 이하'}
+          errorText={errors.image}
+        >
           <input
+            ref={imageInputRef}
             id="signup-image"
             type="file"
-            accept="image/*"
-            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => changeImage(event.target.files?.[0] ?? null)}
             className="block w-full text-sm text-mt-text-secondary file:mr-4 file:rounded-xl file:border-0 file:bg-mt-badge-bg file:px-4 file:py-2 file:font-semibold file:text-mt-primary"
           />
         </BaseField>

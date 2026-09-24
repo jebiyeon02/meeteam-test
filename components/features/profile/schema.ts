@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+const MAX_IMAGE_BYTES = 1024 * 1024;
+
+export const profileImageSchema = z
+  .custom<File>((value) => value instanceof File, '이미지 파일을 선택해 주세요.')
+  .refine(
+    (file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+    'JPG, PNG, WebP 이미지만 사용할 수 있습니다.',
+  )
+  .refine((file) => file.size <= MAX_IMAGE_BYTES, '이미지는 1MB 이하로 선택해 주세요.');
+
 const OPTIONAL_URL = z.union([
   z.literal(''),
   z

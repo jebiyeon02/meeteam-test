@@ -72,8 +72,10 @@ export function updateMyProfile(request: ProfileUpdateRequest, image?: File | nu
   const formData = new FormData();
   formData.append('memberInfo', new Blob([JSON.stringify(request)], { type: 'application/json' }));
   if (image) formData.append('profileImage', image);
-  return authenticatedRequest<{ memberId: number; name: string; message: string }>(
-    `${PROFILE_API_PATH}/me`,
-    { method: 'PUT', body: formData },
-  );
+  return authenticatedRequest<{
+    memberId: number;
+    name: string;
+    message: string;
+    profileImageUrl: string | null;
+  }>(`${PROFILE_API_PATH}/me`, { method: 'PUT', body: formData });
 }

@@ -21,8 +21,8 @@ export default function LoginForm() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const showToast = useToastStore((state) => state.showToast);
-  const [studentId, setStudentId] = useState('');
-  const [password, setPassword] = useState('');
+  const [studentId, setStudentId] = useState('20260001');
+  const [password, setPassword] = useState('demo1234');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,24 +62,31 @@ export default function LoginForm() {
   return (
     <section className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-mt-border bg-mt-white p-6 sm:p-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">세종대 포털 로그인</h1>
-        <p className="text-sm text-mt-text-secondary">학번과 포털 비밀번호로 로그인해 주세요.</p>
+        <h1 className="text-2xl font-bold">데모 로그인</h1>
+        <p className="text-sm text-mt-text-secondary">
+          현재는 MSW 데모입니다. 실제 포털 계정 정보를 입력하지 마세요.
+        </p>
+        <p className="rounded-xl bg-mt-bg-soft p-3 text-sm text-mt-text-secondary">
+          기존 회원: 20260001 / demo1234
+          <br />
+          신규 가입 체험: 20260002 / demo1234
+        </p>
       </div>
       <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5" noValidate>
-        <BaseField label="학번" htmlFor="studentId" errorText={errors.studentId}>
+        <BaseField label="데모 학번" htmlFor="studentId" errorText={errors.studentId}>
           <BaseInput
             id="studentId"
-            autoComplete="username"
+            autoComplete="off"
             value={studentId}
             onChange={(event) => setStudentId(event.target.value)}
             aria-invalid={Boolean(errors.studentId)}
           />
         </BaseField>
-        <BaseField label="비밀번호" htmlFor="password" errorText={errors.password}>
+        <BaseField label="데모 비밀번호" htmlFor="password" errorText={errors.password}>
           <BaseInput
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="off"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             aria-invalid={Boolean(errors.password)}
@@ -95,7 +102,7 @@ export default function LoginForm() {
         </BaseButton>
       </form>
       <p className="text-center text-sm text-mt-text-secondary">
-        처음 이용하시나요? 포털 로그인 후 가입 정보를 입력할 수 있습니다.
+        신규 가입 화면은 위의 신규 가입 데모 학번으로 로그인하면 열립니다.
       </p>
       <Link href="/" className="block text-center text-sm font-semibold text-mt-primary">
         홈으로 돌아가기

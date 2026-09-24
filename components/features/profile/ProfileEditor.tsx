@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import BaseButton from '@/components/shared/BaseButton';
 import BaseField from '@/components/shared/BaseField';
 import BaseInput from '@/components/shared/BaseInput';
 import BaseTextarea from '@/components/shared/BaseTextarea';
 import SkeletonBlock from '@/components/shared/SkeletonBlock';
+import ProfileAvatar from '@/components/features/profile/ProfileAvatar';
 import {
   getJobOptions,
   getMemberDetail,
@@ -14,7 +15,11 @@ import {
   type JobOption,
   type MyProfileResponse,
 } from '@/components/features/profile/profileApi';
-import { profileFormSchema, type ProfileFormValues } from '@/components/features/profile/schema';
+import {
+  profileFormSchema,
+  profileImageSchema,
+  type ProfileFormValues,
+} from '@/components/features/profile/schema';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useToastStore } from '@/stores/useToastStore';
 
@@ -59,6 +64,7 @@ export default function ProfileEditor() {
   const [loadError, setLoadError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -138,6 +144,23 @@ export default function ProfileEditor() {
     setErrors((current) => ({ ...current, [key]: '' }));
   }
 
+  function changeImage(file: File | null) {
+    if (!file) {
+      setImage(null);
+      setErrors((current) => ({ ...current, image: '' }));
+      return;
+    }
+    const parsed = profileImageSchema.safeParse(file);
+    if (!parsed.success) {
+      setImage(null);
+      setErrors((current) => ({ ...current, image: parsed.error.issues[0].message }));
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      return;
+    }
+    setImage(parsed.data);
+    setErrors((current) => ({ ...current, image: '' }));
+  }
+
   async function handleSave(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form || !isDirty) return;
@@ -152,7 +175,7 @@ export default function ProfileEditor() {
     setErrors({});
     setIsSaving(true);
     try {
-      await updateMyProfile(
+      const result = await updateMyProfile(
         {
           name: parsed.data.name,
           age: Number(parsed.data.age),
@@ -172,6 +195,12 @@ export default function ProfileEditor() {
       setForm({ ...parsed.data });
       setOriginal({ ...parsed.data });
       setImage(null);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      setProfile((current) =>
+        current
+          ? { ...current, name: parsed.data.name, profileImageUrl: result.profileImageUrl }
+          : current,
+      );
       setUser({ memberId: profile!.memberId, name: parsed.data.name });
       showToast({ tone: 'success', message: '프로필을 저장했습니다.' });
     } catch (error) {
@@ -207,12 +236,15 @@ export default function ProfileEditor() {
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6">
-      <header>
-        <p className="text-sm font-semibold text-mt-primary">내 프로필</p>
-        <h1 className="mt-1 text-3xl font-bold">프로필 수정</h1>
-        <p className="mt-2 text-sm text-mt-text-secondary">
-          내 정보와 프로젝트 참여 상태를 관리할 수 있습니다.
-        </p>
+      <header className="flex items-center gap-4">
+        <ProfileAvatar name={form.name} src={profile.profileImageUrl} />
+        <div>
+          <p className="text-sm font-semibold text-mt-primary">내 프로필</p>
+          <h1 className="mt-1 text-3xl font-bold">프로필 수정</h1>
+          <p className="mt-2 text-sm text-mt-text-secondary">
+            내 정보와 프로젝트 참여 상태를 관리할 수 있습니다.
+          </p>
+        </div>
       </header>
       <form
         onSubmit={(event) => void handleSave(event)}
@@ -262,13 +294,15 @@ export default function ProfileEditor() {
           label="프로필 이미지"
           htmlFor="profile-image"
           required={false}
-          hintText={image?.name || '변경할 이미지를 선택해 주세요.'}
+          hintText={image?.name || 'JPG, PNG, WebP · 1MB 이하'}
+          errorText={errors.image}
         >
           <input
+            ref={imageInputRef}
             id="profile-image"
             type="file"
-            accept="image/*"
-            onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => changeImage(event.target.files?.[0] ?? null)}
             className="block w-full text-sm text-mt-text-secondary file:mr-4 file:rounded-xl file:border-0 file:bg-mt-badge-bg file:px-4 file:py-2 file:font-semibold file:text-mt-primary"
           />
         </BaseField>
@@ -387,6 +421,7 @@ export default function ProfileEditor() {
             onClick={() => {
               setForm(original);
               setImage(null);
+              if (imageInputRef.current) imageInputRef.current.value = '';
               setErrors({});
             }}
             disabled={!isDirty || isSaving}
