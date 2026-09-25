@@ -1,5 +1,5 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import MemberDirectory from '@/components/features/team/MemberDirectory';
 
 export default function Page() {
-  return <PlannedPage title="팀원 찾기" />;
+  return <MemberDirectory />;
 }

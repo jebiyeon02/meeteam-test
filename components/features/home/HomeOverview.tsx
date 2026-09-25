@@ -4,7 +4,6 @@ import { ArrowRight } from 'lucide-react';
 const AREAS = [
   { href: '/projects', title: '프로젝트 찾기' },
   { href: '/profile', title: '내 프로필' },
-  { href: '/profile/2', title: '공개 프로필 보기' },
   { href: '/teammates', title: '팀원 찾기' },
   { href: '/notifications', title: '알림' },
 ];

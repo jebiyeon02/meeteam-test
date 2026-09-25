@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import BaseButton from '@/components/shared/BaseButton';
 import BaseField from '@/components/shared/BaseField';
 import BaseInput from '@/components/shared/BaseInput';
@@ -236,15 +237,23 @@ export default function ProfileEditor() {
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6">
-      <header className="flex items-center gap-4">
-        <ProfileAvatar name={form.name} src={profile.profileImageUrl} />
-        <div>
-          <p className="text-sm font-semibold text-mt-primary">내 프로필</p>
-          <h1 className="mt-1 text-3xl font-bold">프로필 수정</h1>
-          <p className="mt-2 text-sm text-mt-text-secondary">
-            내 정보와 프로젝트 참여 상태를 관리할 수 있습니다.
-          </p>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <ProfileAvatar name={form.name} src={profile.profileImageUrl} />
+          <div>
+            <p className="text-sm font-semibold text-mt-primary">내 프로필</p>
+            <h1 className="mt-1 text-3xl font-bold">프로필 수정</h1>
+            <p className="mt-2 text-sm text-mt-text-secondary">
+              내 정보와 프로젝트 참여 상태를 관리할 수 있습니다.
+            </p>
+          </div>
         </div>
+        <Link
+          href="/teammates"
+          className="rounded-xl border border-mt-border px-4 py-2 text-sm font-bold text-mt-primary"
+        >
+          다른 팀원 프로필 보기
+        </Link>
       </header>
       <form
         onSubmit={(event) => void handleSave(event)}

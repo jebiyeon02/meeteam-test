@@ -231,6 +231,23 @@ export const handlers = [
     return member ? success(toMyProfile(member)) : failure(401, '로그인이 필요합니다.');
   }),
 
+  http.get('/api/v1/members', async () => {
+    await delay(250);
+    return success(
+      getMembers().map((member) => {
+        const profile = toPublicProfile(member);
+        return {
+          memberId: profile.memberId,
+          profileImageUrl: profile.profileImageUrl,
+          name: profile.name,
+          representativePosition: profile.representativePosition,
+          isParticipating: profile.isParticipating,
+          skills: profile.skills,
+        };
+      }),
+    );
+  }),
+
   http.put('/api/v1/members/me', async ({ request }) => {
     const member = getSessionMember();
     if (!member) return failure(401, '로그인이 필요합니다.');

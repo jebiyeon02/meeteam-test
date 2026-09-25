@@ -44,6 +44,11 @@ export type MemberDetailResponse = {
   skills: string[];
 };
 
+export type MemberSummary = Pick<
+  MemberDetailResponse,
+  'memberId' | 'profileImageUrl' | 'name' | 'representativePosition' | 'isParticipating' | 'skills'
+>;
+
 export type ProfileUpdateRequest = {
   name: string;
   age: number;
@@ -62,6 +67,10 @@ export function getMyProfile() {
 
 export function getMemberDetail(memberId: number) {
   return apiRequest<MemberDetailResponse>(`${PROFILE_API_PATH}/${memberId}`);
+}
+
+export function getMemberSummaries() {
+  return apiRequest<MemberSummary[]>(PROFILE_API_PATH);
 }
 
 export function getJobOptions() {
