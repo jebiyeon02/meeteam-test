@@ -53,6 +53,46 @@ export type MockMember = {
   profileImageUrl: string | null;
 };
 
+export type MockProjectCard = {
+  id: number;
+  title: string;
+  category: string;
+  leader: string;
+  currentMembers: number;
+  maxMembers: number;
+};
+
+export const DEMO_PROJECTS: Record<number, MockProjectCard[]> = {
+  1: [
+    {
+      id: 101,
+      title: '캠퍼스 메이커스',
+      category: '창의학기제',
+      leader: '김민지',
+      currentMembers: 4,
+      maxMembers: 6,
+    },
+    {
+      id: 102,
+      title: '스터디 매칭 서비스',
+      category: '동아리',
+      leader: '김민지',
+      currentMembers: 3,
+      maxMembers: 5,
+    },
+  ],
+  2: [
+    {
+      id: 103,
+      title: 'API 챌린지',
+      category: '캡스톤',
+      leader: '이준호',
+      currentMembers: 2,
+      maxMembers: 4,
+    },
+  ],
+};
+
 export const INITIAL_MEMBERS: MockMember[] = [
   {
     memberId: 1,

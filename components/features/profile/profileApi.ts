@@ -11,6 +11,15 @@ export type JobOption = {
   }[];
 };
 
+export type ProfileProjectCard = {
+  id: number;
+  title: string;
+  category: string;
+  leader: string;
+  currentMembers: number;
+  maxMembers: number;
+};
+
 export type MyProfileResponse = {
   memberId: number;
   name: string;
@@ -25,6 +34,7 @@ export type MyProfileResponse = {
   projectCount: number;
   introduce: string | null;
   profileImageUrl: string | null;
+  projectCards: ProfileProjectCard[];
 };
 
 export type MemberDetailResponse = {
@@ -42,12 +52,13 @@ export type MemberDetailResponse = {
   introduce: string | null;
   participatedProjectCount: number;
   skills: string[];
+  participatedProjects: ProfileProjectCard[];
 };
 
 export type MemberSummary = Pick<
   MemberDetailResponse,
   'memberId' | 'profileImageUrl' | 'name' | 'representativePosition' | 'isParticipating' | 'skills'
->;
+> & { fieldCategory: string; participatedProjectCount: number };
 
 export type ProfileUpdateRequest = {
   name: string;

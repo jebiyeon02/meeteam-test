@@ -1,7 +1,7 @@
 import { delay, http, HttpResponse } from 'msw';
 import { z } from 'zod';
 import { profileImageSchema } from '@/components/features/profile/schema';
-import { JOB_OPTIONS, type MockMember } from '@/mocks/fixtures';
+import { DEMO_PROJECTS, JOB_OPTIONS, type MockMember } from '@/mocks/fixtures';
 import {
   clearSession,
   getMembers,
@@ -91,6 +91,13 @@ function birthDateForAge(age: number) {
   return `${today.getFullYear() - age}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 
+function projectsFor(member: MockMember) {
+  return (DEMO_PROJECTS[member.memberId] ?? []).map((project) => ({
+    ...project,
+    leader: member.name,
+  }));
+}
+
 function toMyProfile(member: MockMember) {
   return {
     memberId: member.memberId,
@@ -109,7 +116,7 @@ function toMyProfile(member: MockMember) {
     introduce: member.introduce,
     profileImageUrl: member.profileImageUrl,
     profileImageName: null,
-    projectCards: [],
+    projectCards: projectsFor(member),
   };
 }
 
@@ -130,7 +137,7 @@ function toPublicProfile(member: MockMember) {
     isParticipating: member.isParticipating,
     introduce: member.introduce,
     participatedProjectCount: member.projectCount,
-    participatedProjects: [],
+    participatedProjects: projectsFor(member),
     skills: member.techStackIds
       .map((id) => skillById(id)?.name)
       .filter((name): name is string => Boolean(name)),
@@ -241,7 +248,12 @@ export const handlers = [
           profileImageUrl: profile.profileImageUrl,
           name: profile.name,
           representativePosition: profile.representativePosition,
+          fieldCategory:
+            JOB_OPTIONS.fields.find((field) =>
+              field.positions.some((position) => position.id === member.jobPositionIds[0]),
+            )?.name ?? '기타',
           isParticipating: profile.isParticipating,
+          participatedProjectCount: profile.participatedProjectCount,
           skills: profile.skills,
         };
       }),

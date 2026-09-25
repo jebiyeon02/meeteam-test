@@ -3,10 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Camera, CheckCircle2, Github, Link2, X } from 'lucide-react';
 import BaseButton from '@/components/shared/BaseButton';
 import BaseField from '@/components/shared/BaseField';
 import BaseInput from '@/components/shared/BaseInput';
 import SkeletonBlock from '@/components/shared/SkeletonBlock';
+import AppLogo from '@/components/shared/AppLogo';
+import ProfileAvatar from '@/components/features/profile/ProfileAvatar';
 import { registerSejong } from '@/components/features/auth/authApi';
 import { registerSchema } from '@/components/features/auth/schema';
 import {
@@ -29,13 +32,16 @@ export default function SignUpForm() {
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState('');
+  const [fieldCode, setFieldCode] = useState('');
   const [positionId, setPositionId] = useState(0);
   const [skillIds, setSkillIds] = useState<number[]>([]);
+  const [skillQuery, setSkillQuery] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [blogUrl, setBlogUrl] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -52,13 +58,25 @@ export default function SignUpForm() {
   }, []);
 
   const selectedField = useMemo(
-    () =>
-      options?.fields.find((field) =>
-        field.positions.some((position) => position.id === positionId),
-      ),
-    [options, positionId],
+    () => options?.fields.find((field) => field.code === fieldCode),
+    [options, fieldCode],
   );
   const selectedPosition = selectedField?.positions.find((position) => position.id === positionId);
+  const suggestedSkills =
+    selectedField?.techStacks.filter(
+      (skill) =>
+        !skillIds.includes(skill.id) && skill.name.toLowerCase().includes(skillQuery.toLowerCase()),
+    ) ?? [];
+
+  useEffect(() => {
+    if (!image) {
+      setImagePreviewUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(image);
+    setImagePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image]);
 
   function changeImage(file: File | null) {
     if (!file) {
@@ -167,153 +185,262 @@ export default function SignUpForm() {
   if (!options) return <SkeletonBlock className="mx-auto h-64 w-full max-w-2xl" />;
 
   return (
-    <section className="mx-auto w-full max-w-2xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold">프로필 만들기</h1>
-        <p className="mt-2 text-sm text-mt-text-secondary">
-          데모 인증을 완료했습니다. 기본 정보를 입력해 주세요.
-        </p>
-      </header>
-      <form
-        onSubmit={(event) => void handleSubmit(event)}
-        className="space-y-6 rounded-2xl border border-mt-border bg-mt-white p-6 sm:p-8"
-        noValidate
-      >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <BaseField label="이름" htmlFor="signup-name" errorText={errors.name}>
-            <BaseInput
-              id="signup-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
+    <div className="flex w-full max-w-150 flex-col gap-5">
+      <Link href="/" aria-label="메인 페이지로 이동" className="mx-auto block sm:mx-0">
+        <AppLogo className="h-9 w-40" priority />
+      </Link>
+      <section className="rounded-3xl border border-mt-border bg-mt-white shadow-sm">
+        <header className="border-b border-mt-border px-6 py-6 sm:px-8">
+          <h1 className="text-3xl font-extrabold leading-9 text-mt-text-primary">
+            세종대 회원가입
+          </h1>
+          <p className="mt-2 text-sm text-mt-text-secondary">
+            MSW 데모 계정의 프로필을 완성해 주세요. 실제 포털 정보는 입력하지 마세요.
+          </p>
+        </header>
+        <form
+          onSubmit={(event) => void handleSubmit(event)}
+          className="flex flex-col gap-5 px-6 py-7 sm:px-8"
+          noValidate
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <BaseField label="이름" htmlFor="signup-name" errorText={errors.name}>
+              <BaseInput
+                id="signup-name"
+                placeholder="실명 입력"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </BaseField>
+            <BaseField label="생년월일" htmlFor="signup-birth" errorText={errors.birthDate}>
+              <BaseInput
+                id="signup-birth"
+                type="date"
+                value={birthDate}
+                onChange={(event) => setBirthDate(event.target.value)}
+              />
+            </BaseField>
+          </div>
+
+          <BaseField label="성별" errorText={errors.gender}>
+            <div className="flex h-13 rounded-xl bg-mt-bg-soft p-1">
+              {(
+                [
+                  ['MALE', '남성'],
+                  ['FEMALE', '여성'],
+                ] as const
+              ).map(([value, label]) => (
+                <label key={value} className="flex-1 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="signup-gender"
+                    value={value}
+                    checked={gender === value}
+                    onChange={() => setGender(value)}
+                    className="peer sr-only"
+                  />
+                  <span className="flex h-11 items-center justify-center rounded-lg font-bold text-mt-text-secondary peer-checked:border peer-checked:border-mt-border peer-checked:bg-mt-white peer-checked:text-mt-primary peer-checked:shadow-sm">
+                    {label}
+                  </span>
+                </label>
+              ))}
+            </div>
           </BaseField>
-          <BaseField label="생년월일" htmlFor="signup-birth" errorText={errors.birthDate}>
-            <BaseInput
-              id="signup-birth"
-              type="date"
-              value={birthDate}
-              onChange={(event) => setBirthDate(event.target.value)}
-            />
-          </BaseField>
-        </div>
-        <BaseField label="성별" htmlFor="signup-gender" errorText={errors.gender}>
-          <select
-            id="signup-gender"
-            value={gender}
-            onChange={(event) => setGender(event.target.value)}
-            className="w-full rounded-xl border border-mt-border bg-mt-white px-4 py-3 text-sm"
-          >
-            <option value="">선택해 주세요</option>
-            <option value="MALE">남성</option>
-            <option value="FEMALE">여성</option>
-          </select>
-        </BaseField>
-        <BaseField label="관심 직무" htmlFor="signup-position" errorText={errors.positionId}>
-          <select
-            id="signup-position"
-            value={positionId}
-            onChange={(event) => {
-              setPositionId(Number(event.target.value));
-              setSkillIds([]);
-            }}
-            className="w-full rounded-xl border border-mt-border bg-mt-white px-4 py-3 text-sm"
-          >
-            <option value={0}>선택해 주세요</option>
-            {options.fields.map((field) => (
-              <optgroup key={field.code} label={field.name}>
-                {field.positions.map((position) => (
+
+          <div className="space-y-2">
+            <p className="text-lg font-bold text-mt-text-primary">분야</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select
+                value={fieldCode}
+                onChange={(event) => {
+                  setFieldCode(event.target.value);
+                  setPositionId(0);
+                  setSkillIds([]);
+                }}
+                aria-label="직군 대분류"
+                className="h-12 w-full rounded-xl border border-mt-border bg-mt-white px-4 text-sm text-mt-text-nav"
+              >
+                <option value="">직군 대분류</option>
+                {options.fields.map((field) => (
+                  <option key={field.code} value={field.code}>
+                    {field.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={positionId}
+                onChange={(event) => {
+                  setPositionId(Number(event.target.value));
+                  setSkillIds([]);
+                }}
+                disabled={!selectedField}
+                aria-label="직군 세부 분야"
+                className="h-12 w-full rounded-xl border border-mt-border bg-mt-white px-4 text-sm text-mt-text-nav disabled:bg-mt-bg-soft"
+              >
+                <option value={0}>직군 세부 분야</option>
+                {selectedField?.positions.map((position) => (
                   <option key={position.id} value={position.id}>
                     {position.name}
                   </option>
                 ))}
-              </optgroup>
-            ))}
-          </select>
-        </BaseField>
-        {selectedField && (
-          <fieldset className="space-y-3">
-            <legend className="text-lg font-bold">
-              기술 스택 <span className="text-sm font-normal text-mt-text-secondary">(선택)</span>
-            </legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {selectedField.techStacks.map((skill) => (
-                <label
-                  key={skill.id}
-                  className="flex items-center gap-2 rounded-xl border border-mt-border px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={skillIds.includes(skill.id)}
-                    onChange={() =>
-                      setSkillIds((ids) =>
-                        ids.includes(skill.id)
-                          ? ids.filter((id) => id !== skill.id)
-                          : [...ids, skill.id],
-                      )
-                    }
-                    className="accent-mt-primary"
-                  />
-                  {skill.name}
-                </label>
-              ))}
+              </select>
             </div>
-          </fieldset>
-        )}
-        <div className="grid gap-5 sm:grid-cols-2">
+            {errors.positionId && (
+              <p role="alert" className="text-sm text-mt-hero-blue">
+                {errors.positionId}
+              </p>
+            )}
+          </div>
+
           <BaseField
-            label="GitHub"
-            htmlFor="signup-github"
+            label="기술 스택"
+            htmlFor="signup-skill"
             required={false}
-            errorText={errors.githubUrl}
+            hintText="상위 3개 기술 스택이 프로필에 먼저 보여요."
           >
-            <BaseInput
-              id="signup-github"
-              type="url"
-              placeholder="https://github.com/"
-              value={githubUrl}
-              onChange={(event) => setGithubUrl(event.target.value)}
+            <input
+              id="signup-skill"
+              type="search"
+              value={skillQuery}
+              onChange={(event) => setSkillQuery(event.target.value)}
+              disabled={!selectedField}
+              placeholder={selectedField ? '기술 스택을 검색해보세요' : '분야를 먼저 선택해 주세요'}
+              className="h-12 w-full rounded-xl border border-mt-border bg-mt-white px-4 text-sm outline-none disabled:bg-mt-bg-soft"
             />
+            {selectedField && (
+              <div className="flex flex-wrap gap-2">
+                {suggestedSkills.map((skill) => (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    onClick={() => {
+                      setSkillIds((current) => [...current, skill.id]);
+                      setSkillQuery('');
+                    }}
+                    className="rounded-lg border border-mt-border px-3 py-1.5 text-xs text-mt-text-secondary hover:bg-mt-badge-bg"
+                  >
+                    + {skill.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {skillIds.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {skillIds.map((id) => {
+                  const skill = selectedField?.techStacks.find((item) => item.id === id);
+                  return skill ? (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() =>
+                        setSkillIds((current) => current.filter((item) => item !== id))
+                      }
+                      className="inline-flex items-center gap-1 rounded-lg bg-mt-badge-bg px-3 py-1.5 text-xs font-semibold text-mt-primary"
+                      aria-label={`${skill.name} 삭제`}
+                    >
+                      {skill.name} <X className="h-3 w-3" />
+                    </button>
+                  ) : null;
+                })}
+              </div>
+            )}
           </BaseField>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <BaseField
+              label="GitHub"
+              htmlFor="signup-github"
+              required={false}
+              errorText={errors.githubUrl}
+            >
+              <BaseInput
+                id="signup-github"
+                type="url"
+                leftIcon={<Github className="h-5 w-5" />}
+                placeholder="https://github.com/..."
+                value={githubUrl}
+                onChange={(event) => setGithubUrl(event.target.value)}
+              />
+            </BaseField>
+            <BaseField
+              label="블로그"
+              htmlFor="signup-blog"
+              required={false}
+              errorText={errors.blogUrl}
+            >
+              <BaseInput
+                id="signup-blog"
+                type="url"
+                leftIcon={<Link2 className="h-5 w-5" />}
+                placeholder="https://..."
+                value={blogUrl}
+                onChange={(event) => setBlogUrl(event.target.value)}
+              />
+            </BaseField>
+          </div>
+
           <BaseField
-            label="블로그"
-            htmlFor="signup-blog"
+            label="프로필 사진"
+            htmlFor="signup-image"
             required={false}
-            errorText={errors.blogUrl}
+            errorText={errors.image}
           >
-            <BaseInput
-              id="signup-blog"
-              type="url"
-              placeholder="https://"
-              value={blogUrl}
-              onChange={(event) => setBlogUrl(event.target.value)}
+            <input
+              ref={imageInputRef}
+              id="signup-image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => changeImage(event.target.files?.[0] ?? null)}
+              className="sr-only"
             />
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-mt-border bg-mt-bg-soft p-5">
+              <div className="flex min-w-0 items-center gap-4">
+                {imagePreviewUrl ? (
+                  <ProfileAvatar
+                    name={name || '프로필'}
+                    src={imagePreviewUrl}
+                    sizeClassName="h-12 w-12"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full border border-mt-border bg-mt-white">
+                    <Camera className="h-5 w-5 text-mt-text-secondary" />
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-mt-text-primary">
+                    {image ? '프로필 사진 등록 완료' : '나를 표현하는 사진을 올려주세요'}
+                  </p>
+                  <p className="truncate text-xs text-mt-text-secondary">
+                    {image ? (
+                      <>
+                        <CheckCircle2 className="mr-1 inline h-3 w-3 text-mt-primary" />
+                        {image.name}
+                      </>
+                    ) : (
+                      'JPG, PNG, WebP (데모 최대 1MB)'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <label
+                htmlFor="signup-image"
+                className="shrink-0 cursor-pointer rounded-lg border border-mt-border bg-mt-white px-4 py-2 text-xs font-bold text-mt-text-nav"
+              >
+                {image ? '사진 변경' : '업로드'}
+              </label>
+            </div>
           </BaseField>
-        </div>
-        <BaseField
-          label="프로필 이미지"
-          htmlFor="signup-image"
-          required={false}
-          hintText={image?.name || 'JPG, PNG, WebP · 1MB 이하'}
-          errorText={errors.image}
-        >
-          <input
-            ref={imageInputRef}
-            id="signup-image"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => changeImage(event.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-mt-text-secondary file:mr-4 file:rounded-xl file:border-0 file:bg-mt-badge-bg file:px-4 file:py-2 file:font-semibold file:text-mt-primary"
-          />
-        </BaseField>
-        {errors.form && (
-          <p role="alert" className="text-sm text-mt-danger">
-            {errors.form}
-          </p>
-        )}
-        <BaseButton type="submit" full disabled={isSubmitting}>
-          {isSubmitting ? '가입 중...' : '가입 완료'}
-        </BaseButton>
-      </form>
-    </section>
+
+          {errors.form && (
+            <p role="alert" className="text-sm text-mt-danger">
+              {errors.form}
+            </p>
+          )}
+          <BaseButton size="L" type="submit" full disabled={isSubmitting}>
+            {isSubmitting ? '가입 중...' : '회원가입 완료'}
+          </BaseButton>
+        </form>
+      </section>
+    </div>
   );
 }

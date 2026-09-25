@@ -43,7 +43,7 @@ export default function LoginForm() {
       if (result.isNewMember) {
         if (!result.code) throw new Error('회원가입 인증 코드를 받지 못했습니다.');
         sessionStorage.setItem('sejongRegistrationCode', result.code);
-        router.push('/auth/sign-up');
+        router.push('/auth/sign-up/sejong');
         return;
       }
       const profile = await getMyProfile();
