@@ -126,3 +126,48 @@ export const INITIAL_MEMBERS: MockMember[] = [
     profileImageUrl: null,
   },
 ];
+
+const PROJECT_SEEDS = [
+  ['캠퍼스 메이커스', 'CAPSTONE', 'WEB', 'FRONTEND', 1, 1],
+  ['스터디 매칭 서비스', 'CLUB', 'WEB', 'BACKEND', 3, 5],
+  ['API 챌린지', 'CAPSTONE', 'WEB', 'BACKEND', 4, 8],
+  ['세종 맛집 지도', 'CREATIVE_SEMESTER', 'IOS', 'DESIGN', 5, 9],
+  ['학교 일정 한눈에', 'ETC', 'ANDROID', 'FRONTEND', 2, 4],
+  ['학습 기록 대시보드', 'CLUB', 'WEB', 'FRONTEND', 1, 2],
+  ['캠퍼스 중고 거래', 'CAPSTONE', 'WEB', 'BACKEND', 3, 6],
+  ['동아리 행사 캘린더', 'CREATIVE_SEMESTER', 'IOS', 'DESIGN', 5, 9],
+  ['AI 아이디어 노트', 'ETC', 'WEB', 'FRONTEND', 1, 3],
+  ['코딩 테스트 스터디', 'CLUB', 'WEB', 'BACKEND', 4, 8],
+  ['교내 셔틀 도우미', 'CAPSTONE', 'ANDROID', 'FRONTEND', 2, 4],
+  ['전시회 큐레이션', 'CREATIVE_SEMESTER', 'WEB', 'DESIGN', 5, 9],
+] as const;
+
+export const INITIAL_PROJECTS: ProjectRecord[] = PROJECT_SEEDS.map(
+  ([name, category, platform, field, positionId, skillId], index) => {
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 14 + index * 3);
+    const createdAt = new Date();
+    createdAt.setDate(createdAt.getDate() - index);
+    return {
+      id: 101 + index,
+      name,
+      category,
+      platform,
+      description: `${name} 프로젝트에서 함께 문제를 해결할 팀원을 모집합니다. 관심 있는 분은 프로젝트에 참여해 주세요.`,
+      githubUrl: '',
+      communicationUrl: '',
+      leaderPositionId: positionId,
+      recruitments: [
+        { jobFieldCode: field, jobPositionId: positionId, count: 3, techStackIds: [skillId] },
+      ],
+      deadline: deadline.toISOString().slice(0, 10),
+      closeWhenFull: false,
+      leaderId: index % 2 === 0 ? 1 : 2,
+      leaderName: index % 2 === 0 ? '김민지' : '이준호',
+      imageUrl: null,
+      createdAt: createdAt.toISOString(),
+      currentMembers: 1,
+    };
+  },
+);
+import type { ProjectRecord } from '@/components/features/project/projectApi';

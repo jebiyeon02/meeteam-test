@@ -1,5 +1,5 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import ProjectCreatePage from '@/components/features/project/create/ProjectCreatePage';
 
 export default function Page() {
-  return <PlannedPage title="프로젝트 등록" />;
+  return <ProjectCreatePage />;
 }

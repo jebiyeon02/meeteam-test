@@ -1,5 +1,5 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import ProjectFindPage from '@/components/features/project/find/ProjectFindPage';
 
 export default function Page() {
-  return <PlannedPage title="프로젝트 찾기" />;
+  return <ProjectFindPage />;
 }

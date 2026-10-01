@@ -1,12 +1,18 @@
 import { delay, http, HttpResponse } from 'msw';
 import { z } from 'zod';
 import { profileImageSchema } from '@/components/features/profile/schema';
+import {
+  projectCoverSchema,
+  projectCreateSchema,
+} from '@/components/features/project/create/schema';
 import { DEMO_PROJECTS, JOB_OPTIONS, type MockMember } from '@/mocks/fixtures';
 import {
   clearSession,
   getMembers,
+  getProjects,
   getSessionMember,
   saveMember,
+  saveProject,
   setSession,
 } from '@/mocks/storage';
 
@@ -306,5 +312,86 @@ export const handlers = [
     await delay(250);
     const member = getMembers().find((item) => item.memberId === Number(params.memberId));
     return member ? success(toPublicProfile(member)) : failure(404, '프로필을 찾을 수 없습니다.');
+  }),
+
+  http.post('/api/v1/projects', async ({ request }) => {
+    await delay(350);
+    const member = getSessionMember();
+    if (!member) return failure(401, '프로젝트 등록은 로그인 후 이용할 수 있어요.');
+    const data = await request.formData();
+    const parsed = projectCreateSchema.safeParse(await jsonPart(data, 'request'));
+    if (!parsed.success)
+      return failure(400, parsed.error.issues[0]?.message ?? '등록 정보를 확인해 주세요.');
+    if (parsed.data.name === '등록실패')
+      return failure(500, '프로젝트 등록 중 오류가 발생했습니다.');
+    if (parsed.data.name === '네트워크오류') return HttpResponse.error();
+    const file = data.get('file');
+    if (file && !projectCoverSchema.safeParse(file).success)
+      return failure(400, 'JPG, PNG, WebP 이미지를 2MB 이하로 선택해 주세요.');
+    const positions = JOB_OPTIONS.fields.flatMap((field) => field.positions);
+    if (!positions.some((position) => position.id === parsed.data.leaderPositionId))
+      return failure(400, '리더 직무를 확인해 주세요.');
+    for (const recruitment of parsed.data.recruitments) {
+      const field = JOB_OPTIONS.fields.find((option) => option.code === recruitment.jobFieldCode);
+      if (
+        !field?.positions.some((position) => position.id === recruitment.jobPositionId) ||
+        recruitment.techStackIds.some((id) => !field.techStacks.some((stack) => stack.id === id))
+      )
+        return failure(400, '모집 직무 또는 기술 스택을 확인해 주세요.');
+    }
+    const project = {
+      ...parsed.data,
+      id: Math.max(1000, ...getProjects().map((item) => item.id)) + 1,
+      leaderId: member.memberId,
+      leaderName: member.name,
+      imageUrl: await imageDataUrl(file instanceof File ? file : null),
+      createdAt: new Date().toISOString(),
+      currentMembers: 1,
+    };
+    saveProject(project);
+    return success({ id: project.id });
+  }),
+
+  http.get('/api/v1/projects/search', async ({ request }) => {
+    await delay(300);
+    const params = new URL(request.url).searchParams;
+    const keyword = (params.get('keyword') ?? '').trim().toLocaleLowerCase();
+    if (keyword === '조회실패') return failure(500, '프로젝트 목록을 불러오지 못했습니다.');
+    if (keyword === '네트워크오류') return HttpResponse.error();
+    const category = params.get('category') ?? '';
+    const jobField = params.get('jobField') ?? '';
+    const techStackId = Number(params.get('techStackId'));
+    const page = Math.max(0, Number(params.get('page')) || 0);
+    const size = Math.min(20, Math.max(1, Number(params.get('size')) || 8));
+    const sort = params.get('sort') ?? 'latest';
+    const filtered = getProjects().filter(
+      (project) =>
+        (!keyword ||
+          `${project.name} ${project.leaderName}`.toLocaleLowerCase().includes(keyword)) &&
+        (!category || project.category === category) &&
+        (!jobField || project.recruitments.some((item) => item.jobFieldCode === jobField)) &&
+        (!techStackId ||
+          project.recruitments.some((item) => item.techStackIds.includes(techStackId))),
+    );
+    filtered.sort((a, b) =>
+      sort === 'name'
+        ? a.name.localeCompare(b.name, 'ko')
+        : sort === 'deadline'
+          ? (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999')
+          : b.createdAt.localeCompare(a.createdAt),
+    );
+    const content = filtered.slice(page * size, (page + 1) * size);
+    return success({
+      content,
+      totalElements: filtered.length,
+      page,
+      hasMore: (page + 1) * size < filtered.length,
+    });
+  }),
+
+  http.get('/api/v1/projects/:projectId', async ({ params }) => {
+    await delay(250);
+    const project = getProjects().find((item) => item.id === Number(params.projectId));
+    return project ? success(project) : failure(404, '프로젝트를 찾을 수 없습니다.');
   }),
 ];

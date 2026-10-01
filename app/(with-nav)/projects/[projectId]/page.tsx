@@ -1,5 +1,6 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import ProjectSummaryPage from '@/components/features/project/detail/ProjectSummaryPage';
 
-export default function Page() {
-  return <PlannedPage title="프로젝트 상세" />;
+export default async function Page({ params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+  return <ProjectSummaryPage projectId={Number(projectId)} />;
 }
