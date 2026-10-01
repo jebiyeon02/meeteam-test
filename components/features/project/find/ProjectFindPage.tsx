@@ -32,7 +32,7 @@ const INITIAL_FILTERS: ProjectSearchFilters = {
 };
 
 const SELECT_CLASS =
-  'h-12 w-full rounded-xl border border-mt-border bg-mt-white px-4 text-sm text-mt-text-primary outline-none focus:border-mt-primary';
+  'h-12 rounded-xl border border-mt-border bg-mt-white px-4 text-sm text-mt-text-primary outline-none focus:border-mt-primary';
 
 function isRecruiting(project: ProjectRecord) {
   const totalCapacity = 1 + project.recruitments.reduce((sum, item) => sum + item.count, 0);
@@ -209,7 +209,7 @@ function ProjectFindContent() {
               onChange={(event) =>
                 updateFilter('category', event.target.value as ProjectCategory | '')
               }
-              className={SELECT_CLASS}
+              className={`${SELECT_CLASS} w-full`}
             >
               <option value="">모든 카테고리</option>
               {PROJECT_CATEGORIES.map((item) => (
@@ -257,7 +257,7 @@ function ProjectFindContent() {
             onChange={(event) =>
               updateFilter('techStackId', event.target.value ? Number(event.target.value) : null)
             }
-            className={`${SELECT_CLASS} max-w-60`}
+            className={`${SELECT_CLASS} w-full max-w-60`}
             disabled={optionsQuery.isPending}
           >
             <option value="">전체 기술</option>
@@ -279,7 +279,7 @@ function ProjectFindContent() {
         <p className="text-sm font-semibold text-mt-text-secondary">
           총 <span className="text-mt-primary">{totalCount}</span>개의 프로젝트
         </p>
-        <label className="flex items-center gap-2 text-sm text-mt-text-secondary">
+        <label className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-mt-text-secondary">
           정렬
           <select
             value={filters.sort}
