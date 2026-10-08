@@ -99,13 +99,11 @@ export default function ProfileEditor() {
         .map((name) => skills.find((skill) => skill.name === name)?.id)
         .filter((id): id is number => id !== undefined);
 
-      if (
-        jobPositionIds.length !== detail.jobPositions.length ||
-        techStackIds.length !== myProfile.skills.length
-      ) {
-        throw new Error(
-          '프로필의 직군 또는 기술 스택을 선택 목록과 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
-        );
+      if (jobPositionIds.length === 0 && myProfile.representativePosition) {
+        const representativeId = positions.find(
+          (position) => position.name === myProfile.representativePosition,
+        )?.id;
+        if (representativeId) jobPositionIds.push(representativeId);
       }
 
       const nextForm: ProfileFormValues = {

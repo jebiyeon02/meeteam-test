@@ -21,8 +21,9 @@ export default function LoginForm() {
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
   const showToast = useToastStore((state) => state.showToast);
-  const [studentId, setStudentId] = useState('20260001');
-  const [password, setPassword] = useState('demo1234');
+  const isMockMode = process.env.NEXT_PUBLIC_API_MODE === 'mock';
+  const [studentId, setStudentId] = useState(isMockMode ? '20260001' : '');
+  const [password, setPassword] = useState(isMockMode ? 'demo1234' : '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,31 +63,43 @@ export default function LoginForm() {
   return (
     <section className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-mt-border bg-mt-white p-6 sm:p-8">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">데모 로그인</h1>
+        <h1 className="text-2xl font-bold">{isMockMode ? '데모 로그인' : '세종대 로그인'}</h1>
         <p className="text-sm text-mt-text-secondary">
-          현재는 MSW 데모입니다. 실제 포털 계정 정보를 입력하지 마세요.
+          {isMockMode
+            ? '현재는 MSW 데모입니다. 실제 포털 계정 정보를 입력하지 마세요.'
+            : '입력한 학번과 비밀번호는 연결된 세종대 로그인 API로 전송됩니다.'}
         </p>
-        <p className="rounded-xl bg-mt-bg-soft p-3 text-sm text-mt-text-secondary">
-          기존 회원: 20260001 / demo1234
-          <br />
-          신규 가입 체험: 20260002 / demo1234
-        </p>
+        {isMockMode && (
+          <p className="rounded-xl bg-mt-bg-soft p-3 text-sm text-mt-text-secondary">
+            기존 회원: 20260001 / demo1234
+            <br />
+            신규 가입 체험: 20260002 / demo1234
+          </p>
+        )}
       </div>
       <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5" noValidate>
-        <BaseField label="데모 학번" htmlFor="studentId" errorText={errors.studentId}>
+        <BaseField
+          label={isMockMode ? '데모 학번' : '세종대 학번'}
+          htmlFor="studentId"
+          errorText={errors.studentId}
+        >
           <BaseInput
             id="studentId"
-            autoComplete="off"
+            autoComplete="username"
             value={studentId}
             onChange={(event) => setStudentId(event.target.value)}
             aria-invalid={Boolean(errors.studentId)}
           />
         </BaseField>
-        <BaseField label="데모 비밀번호" htmlFor="password" errorText={errors.password}>
+        <BaseField
+          label={isMockMode ? '데모 비밀번호' : '포털 비밀번호'}
+          htmlFor="password"
+          errorText={errors.password}
+        >
           <BaseInput
             id="password"
             type="password"
-            autoComplete="off"
+            autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             aria-invalid={Boolean(errors.password)}
@@ -101,9 +114,11 @@ export default function LoginForm() {
           {isSubmitting ? '로그인 중...' : '로그인'}
         </BaseButton>
       </form>
-      <p className="text-center text-sm text-mt-text-secondary">
-        신규 가입 화면은 위의 신규 가입 데모 학번으로 로그인하면 열립니다.
-      </p>
+      {isMockMode && (
+        <p className="text-center text-sm text-mt-text-secondary">
+          신규 가입 화면은 위의 신규 가입 데모 학번으로 로그인하면 열립니다.
+        </p>
+      )}
       <Link href="/" className="block text-center text-sm font-semibold text-mt-primary">
         홈으로 돌아가기
       </Link>

@@ -12,8 +12,19 @@ export const projectCreateSchema = z
     category: z.enum(['CAPSTONE', 'CREATIVE_SEMESTER', 'CLUB', 'ETC']),
     platform: z.enum(['WEB', 'IOS', 'ANDROID']),
     description: z.string().trim().min(10, '소개는 10자 이상 입력해 주세요.').max(5000),
-    githubUrl: optionalUrl,
-    communicationUrl: optionalUrl,
+    githubUrl: optionalUrl.refine(
+      (value) =>
+        !value || /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(value),
+      'GitHub 저장소 주소를 입력해 주세요.',
+    ),
+    communicationUrl: optionalUrl.refine(
+      (value) =>
+        !value ||
+        /^https:\/\/(discord\.gg\/[A-Za-z0-9]+|discord\.com\/invite\/[A-Za-z0-9]+|join\.slack\.com\/t\/[A-Za-z0-9/_-]+|[A-Za-z0-9-]+\.slack\.com|open\.kakao\.com\/o\/[A-Za-z0-9]+)\/?$/.test(
+          value,
+        ),
+      '디스코드·슬랙·카카오톡 오픈채팅 링크를 입력해 주세요.',
+    ),
     leaderPositionId: z.number().int().positive('리더의 직무를 선택해 주세요.'),
     recruitments: z
       .array(

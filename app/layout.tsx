@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import AuthSessionBootstrap from '@/components/features/auth/AuthSessionBootstrap';
 import LoginPromptModal from '@/components/features/auth/LoginPromptModal';
-import MockApiProvider from '@/components/features/auth/MockApiProvider';
+import ApiProvider from '@/components/features/auth/ApiProvider';
 import ToastViewport from '@/components/shared/ToastViewport';
 import './globals.css';
 
@@ -14,12 +14,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko">
       <body>
-        <MockApiProvider>
+        <ApiProvider>
           <AuthSessionBootstrap />
           {children}
           <LoginPromptModal />
           <ToastViewport />
-        </MockApiProvider>
+        </ApiProvider>
       </body>
     </html>
   );

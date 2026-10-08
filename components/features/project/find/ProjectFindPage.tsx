@@ -30,11 +30,13 @@ const INITIAL_FILTERS: ProjectSearchFilters = {
   techStackId: null,
   sort: 'latest',
 };
+const IS_MOCK_MODE = process.env.NEXT_PUBLIC_API_MODE === 'mock';
 
 const SELECT_CLASS =
   'h-12 rounded-xl border border-mt-border bg-mt-white px-4 text-sm text-mt-text-primary outline-none focus:border-mt-primary';
 
 function isRecruiting(project: ProjectRecord) {
+  if (project.recruitmentStatus) return project.recruitmentStatus === 'RECRUITING';
   const totalCapacity = 1 + project.recruitments.reduce((sum, item) => sum + item.count, 0);
   return (
     (!project.deadline || project.deadline >= todayLocalDate()) &&
@@ -43,7 +45,11 @@ function isRecruiting(project: ProjectRecord) {
 }
 
 function ProjectCard({ project }: { project: ProjectRecord }) {
-  const stackIds = [...new Set(project.recruitments.flatMap((item) => item.techStackIds))];
+  const stackCount = new Set(
+    project.recruitments.flatMap((item) =>
+      item.techStackNames?.length ? item.techStackNames : item.techStackIds.map(String),
+    ),
+  ).size;
   return (
     <Link
       href={`/projects/${project.id}`}
@@ -69,26 +75,29 @@ function ProjectCard({ project }: { project: ProjectRecord }) {
         <h2 className="mt-3 line-clamp-2 text-lg font-bold text-mt-text-primary group-hover:text-mt-primary">
           {project.name}
         </h2>
-        <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-mt-text-secondary">
-          {project.description}
-        </p>
+        {project.description && (
+          <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-mt-text-secondary">
+            {project.description}
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-1.5">
           {project.recruitments.map((item, index) => (
             <span
               key={`${item.jobPositionId}-${index}`}
               className="rounded-md bg-mt-badge-bg px-2 py-1 text-xs text-mt-primary"
             >
-              {item.jobFieldCode === 'FRONTEND'
-                ? '프론트엔드'
-                : item.jobFieldCode === 'BACKEND'
-                  ? '백엔드'
-                  : '디자인'}{' '}
+              {item.jobFieldName ??
+                (item.jobFieldCode === 'FRONTEND'
+                  ? '프론트엔드'
+                  : item.jobFieldCode === 'BACKEND'
+                    ? '백엔드'
+                    : '디자인')}{' '}
               · {item.count}명
             </span>
           ))}
-          {stackIds.length > 0 && (
+          {stackCount > 0 && (
             <span className="rounded-md bg-mt-bg-soft px-2 py-1 text-xs text-mt-text-secondary">
-              기술 {stackIds.length}개
+              기술 {stackCount}개
             </span>
           )}
         </div>
@@ -156,7 +165,7 @@ function ProjectFindContent() {
   }
 
   const projects = projectQuery.data?.pages.flatMap((page) => page.content) ?? [];
-  const totalCount = projectQuery.data?.pages[0]?.totalElements ?? 0;
+  const totalCount = projectQuery.data?.pages[0]?.totalElements ?? projects.length;
   const options = optionsQuery.data?.fields ?? [];
   const selectedField = options.find((field) => field.code === filters.jobField);
   const skills = filters.jobField
@@ -247,37 +256,40 @@ function ProjectFindContent() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-mt-border pt-5">
-          <label htmlFor="project-skill" className="text-sm font-bold">
-            기술 스택
-          </label>
-          <select
-            id="project-skill"
-            value={filters.techStackId ?? ''}
-            onChange={(event) =>
-              updateFilter('techStackId', event.target.value ? Number(event.target.value) : null)
-            }
-            className={`${SELECT_CLASS} w-full max-w-60`}
-            disabled={optionsQuery.isPending}
-          >
-            <option value="">전체 기술</option>
-            {skills.map((skill) => (
-              <option key={skill.id} value={skill.id}>
-                {skill.name}
-              </option>
-            ))}
-          </select>
-          {optionsQuery.isError && (
-            <span role="alert" className="text-sm text-mt-danger">
-              기술 목록을 불러오지 못했어요.
-            </span>
-          )}
-        </div>
+        {IS_MOCK_MODE && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-mt-border pt-5">
+            <label htmlFor="project-skill" className="text-sm font-bold">
+              기술 스택
+            </label>
+            <select
+              id="project-skill"
+              value={filters.techStackId ?? ''}
+              onChange={(event) =>
+                updateFilter('techStackId', event.target.value ? Number(event.target.value) : null)
+              }
+              className={`${SELECT_CLASS} w-full max-w-60`}
+              disabled={optionsQuery.isPending}
+            >
+              <option value="">전체 기술</option>
+              {skills.map((skill) => (
+                <option key={skill.id} value={skill.id}>
+                  {skill.name}
+                </option>
+              ))}
+            </select>
+            {optionsQuery.isError && (
+              <span role="alert" className="text-sm text-mt-danger">
+                기술 목록을 불러오지 못했어요.
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-semibold text-mt-text-secondary">
-          총 <span className="text-mt-primary">{totalCount}</span>개의 프로젝트
+          {IS_MOCK_MODE ? '총' : '현재'} <span className="text-mt-primary">{totalCount}</span>개의
+          프로젝트
         </p>
         <label className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-mt-text-secondary">
           정렬
@@ -290,7 +302,7 @@ function ProjectFindContent() {
           >
             <option value="latest">최신순</option>
             <option value="deadline">마감 임박순</option>
-            <option value="name">이름순</option>
+            {IS_MOCK_MODE && <option value="name">이름순</option>}
           </select>
         </label>
       </div>

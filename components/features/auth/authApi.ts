@@ -4,6 +4,12 @@ type ApiEnvelope<T> = {
   result: T;
 };
 
+let accessToken: string | null = null;
+
+function clearAccessToken() {
+  accessToken = null;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -14,11 +20,25 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers);
+  if (
+    accessToken &&
+    !['/api/v1/auth/login/sejong', '/api/v1/auth/register/sejong', '/api/v1/auth/refresh'].includes(
+      path,
+    )
+  ) {
+    headers.set('Authorization', accessToken);
+  }
   const response = await fetch(path, {
     ...init,
+    headers,
     credentials: 'include',
     cache: 'no-store',
   });
+  const receivedToken = response.headers.get('authorization');
+  if (receivedToken) {
+    accessToken = receivedToken.startsWith('Bearer ') ? receivedToken : `Bearer ${receivedToken}`;
+  }
   const data = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
 
   if (!response.ok) {
@@ -64,16 +84,26 @@ export async function authenticatedRequest<T>(path: string, init: RequestInit = 
 
 export type SejongLoginResult = { isNewMember: boolean; code: string | null };
 
-export function loginSejong(studentId: string, password: string) {
-  return apiRequest<SejongLoginResult>('/api/v1/auth/login/sejong', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ studentId, password }),
-  });
+export async function loginSejong(studentId: string, password: string): Promise<SejongLoginResult> {
+  clearAccessToken();
+  const result = await apiRequest<SejongLoginResult & { newMember?: boolean }>(
+    '/api/v1/auth/login/sejong',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, password }),
+    },
+  );
+  return {
+    isNewMember: result.isNewMember ?? result.newMember ?? false,
+    code: result.code ?? null,
+  };
 }
 
-export function logout() {
-  return apiRequest<string>('/api/v1/auth/logout', { method: 'POST' });
+export async function logout() {
+  const result = await apiRequest<string>('/api/v1/auth/logout', { method: 'POST' });
+  clearAccessToken();
+  return result;
 }
 
 export type SejongRegistration = {

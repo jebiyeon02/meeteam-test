@@ -96,18 +96,24 @@ export default function ProjectSummaryPage({ projectId }: { projectId: number })
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-bold">
-                      {positions.find((position) => position.id === item.jobPositionId)?.name ??
+                      {item.jobPositionName ??
+                        positions.find((position) => position.id === item.jobPositionId)?.name ??
                         '모집 직무'}
                     </h3>
                     <span className="text-sm text-mt-text-secondary">{item.count}명 모집</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {item.techStackIds.map((id) => (
+                    {(item.techStackNames?.length
+                      ? item.techStackNames
+                      : item.techStackIds.map(
+                          (id) => skills.find((skill) => skill.id === id)?.name ?? '기술',
+                        )
+                    ).map((name, index) => (
                       <span
-                        key={id}
+                        key={`${name}-${index}`}
                         className="rounded-full bg-mt-badge-bg px-3 py-1 text-xs text-mt-primary"
                       >
-                        {skills.find((skill) => skill.id === id)?.name ?? '기술'}
+                        {name}
                       </span>
                     ))}
                   </div>

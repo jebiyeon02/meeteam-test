@@ -59,7 +59,12 @@ export default function MemberDirectory() {
         (member) =>
           (!search || member.name.toLowerCase().includes(search)) &&
           (selectedRole === '전체' ||
-            member.fieldCategory === (selectedRole === '디자이너' ? '디자인' : selectedRole)) &&
+            [
+              selectedRole,
+              selectedRole === '디자이너' ? '디자인' : '',
+              selectedRole === 'PM/기획' ? '기획' : '',
+              selectedRole === '프론트엔드' ? '프론트' : '',
+            ].includes(member.fieldCategory)) &&
           selectedSkills.every((skill) => member.skills.includes(skill)),
       )
       .sort((a, b) =>

@@ -195,7 +195,9 @@ export default function SignUpForm() {
             세종대 회원가입
           </h1>
           <p className="mt-2 text-sm text-mt-text-secondary">
-            MSW 데모 계정의 프로필을 완성해 주세요. 실제 포털 정보는 입력하지 마세요.
+            {process.env.NEXT_PUBLIC_API_MODE === 'mock'
+              ? 'MSW 데모 계정의 프로필을 완성해 주세요. 실제 포털 정보는 입력하지 마세요.'
+              : '세종대 로그인 후 발급된 인증 코드로 프로필을 완성해 주세요.'}
           </p>
         </header>
         <form
