@@ -1,5 +1,5 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import MyApplicationsPage from '@/components/features/project/apply/MyApplicationsPage';
 
 export default function Page() {
-  return <PlannedPage title="내 지원 현황" />;
+  return <MyApplicationsPage />;
 }

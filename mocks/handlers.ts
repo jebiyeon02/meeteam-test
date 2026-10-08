@@ -1,4 +1,6 @@
 import { delay, http, HttpResponse } from 'msw';
+import { projectWeek6Handlers } from './projectWeek6Handlers';
+import { getLikes } from './storage';
 import { z } from 'zod';
 import { profileImageSchema } from '@/components/features/profile/schema';
 import {
@@ -171,6 +173,7 @@ function imageDataUrl(file: File | null): Promise<string | null> {
 }
 
 export const handlers = [
+  ...projectWeek6Handlers,
   http.post('/api/v1/auth/login/sejong', async ({ request }) => {
     const parsed = loginRequestSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return failure(400, '학번과 비밀번호를 입력해 주세요.');
@@ -392,6 +395,11 @@ export const handlers = [
   http.get('/api/v1/projects/:projectId', async ({ params }) => {
     await delay(250);
     const project = getProjects().find((item) => item.id === Number(params.projectId));
-    return project ? success(project) : failure(404, '프로젝트를 찾을 수 없습니다.');
+    return project
+      ? success({
+          ...project,
+          likeCount: getLikes().filter((item) => item.endsWith(`:${project.id}`)).length,
+        })
+      : failure(404, '프로젝트를 찾을 수 없습니다.');
   }),
 ];

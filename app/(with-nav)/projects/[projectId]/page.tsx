@@ -2,5 +2,5 @@ import ProjectSummaryPage from '@/components/features/project/detail/ProjectSumm
 
 export default async function Page({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
-  return <ProjectSummaryPage projectId={Number(projectId)} />;
+  return <ProjectSummaryPage key={projectId} projectId={Number(projectId)} />;
 }

@@ -1,5 +1,44 @@
 import { INITIAL_MEMBERS, INITIAL_PROJECTS, type MockMember } from '@/mocks/fixtures';
 import type { ProjectRecord } from '@/components/features/project/projectApi';
+import type { AppliedProject } from '@/components/features/project/applicationApi';
+
+export type MockApplication = AppliedProject & { applicantId: number; motivation: string };
+const APPLICATIONS_KEY = 'meeteam-week6-applications';
+const LIKES_KEY = 'meeteam-week6-likes';
+
+export function getApplications(): MockApplication[] {
+  try {
+    return JSON.parse(localStorage.getItem(APPLICATIONS_KEY) ?? '[]') as MockApplication[];
+  } catch {
+    return [];
+  }
+}
+export function saveApplication(application: MockApplication) {
+  localStorage.setItem(
+    APPLICATIONS_KEY,
+    JSON.stringify([
+      ...getApplications().filter((item) => item.applicationId !== application.applicationId),
+      application,
+    ]),
+  );
+}
+export function getLikes(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(LIKES_KEY) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
+export function toggleLike(memberId: number, projectId: number) {
+  const key = `${memberId}:${projectId}`;
+  const likes = getLikes();
+  const next = likes.includes(key) ? likes.filter((item) => item !== key) : [...likes, key];
+  localStorage.setItem(LIKES_KEY, JSON.stringify(next));
+  return {
+    liked: next.includes(key),
+    likeCount: next.filter((item) => item.endsWith(`:${projectId}`)).length,
+  };
+}
 
 const MEMBERS_KEY = 'meeteam-week4-members';
 const SESSION_KEY = 'meeteam-week4-session';

@@ -14,6 +14,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly code?: string,
   ) {
     super(message);
   }
@@ -42,7 +43,14 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   const data = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
 
   if (!response.ok) {
-    throw new ApiError(data?.message || '요청을 처리하지 못했습니다.', response.status);
+    throw new ApiError(
+      data?.message ||
+        (response.status >= 500
+          ? '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.'
+          : '요청을 처리하지 못했습니다.'),
+      response.status,
+      data?.code,
+    );
   }
 
   if (!data) {

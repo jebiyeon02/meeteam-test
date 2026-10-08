@@ -53,6 +53,10 @@ export type ProjectRecord = ProjectCreateRequest & {
   imageUrl: string | null;
   createdAt: string;
   currentMembers: number;
+  memberIds?: number[];
+  isLeader?: boolean;
+  isLiked?: boolean;
+  likeCount?: number;
   recruitmentStatus?: 'RECRUITING' | 'CLOSED' | 'SUSPENDED';
 };
 
@@ -262,6 +266,9 @@ export async function getProject(id: number): Promise<ProjectRecord> {
     communicationChannelUrl: string | null;
     leader: { id: number; name: string };
     members?: { memberId: number }[];
+    isLeader?: boolean;
+    isLiked?: boolean;
+    likeCount?: number;
     recruitments: {
       jobFieldCode: string;
       jobFieldName: string;
@@ -286,6 +293,10 @@ export async function getProject(id: number): Promise<ProjectRecord> {
     communicationUrl: detail.communicationChannelUrl ?? '',
     leaderId: detail.leader.id,
     leaderName: detail.leader.name,
+    memberIds: detail.members?.map((member) => member.memberId) ?? [],
+    isLeader: detail.isLeader,
+    isLiked: detail.isLiked,
+    likeCount: detail.likeCount,
     leaderPositionId: 0,
     recruitments: detail.recruitments.map((item) => ({
       jobFieldCode: item.jobFieldCode,
