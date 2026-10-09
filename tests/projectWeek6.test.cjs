@@ -35,11 +35,27 @@ global.localStorage = {
 global.location = new URL('http://localhost:3000');
 const nativeFetch = global.fetch;
 const { setupServer } = require('msw/node');
-const { projectWeek6Handlers } = require('../mocks/projectWeek6Handlers.ts');
+const { handlers } = require('../mocks/handlers.ts');
 const storage = require('../mocks/storage.ts');
-const api = require('../components/features/project/applicationApi.ts');
+const projectApi = require('../components/features/project/projectApi.ts');
+const api = {
+  getApplicationPage: projectApi.fetchProjectApplicationPage,
+  submitApplication: projectApi.applyToProject,
+  getMyApplications: projectApi.fetchMyProjectApplications,
+  getApplicationDetail: projectApi.fetchProjectApplicationDetail,
+  cancelApplication: projectApi.cancelProjectApplication,
+  getProjectLike: projectApi.fetchProjectLikeStatus,
+  toggleProjectLike: projectApi.toggleProjectLike,
+  getProjectQnas: async (...args) => {
+    const result =
+      await require('../components/features/project/detail/projectQnaApi.ts').fetchProjectQnas(
+        ...args,
+      );
+    return { content: result.qnas };
+  },
+};
 const { projectApplicationSchema } = require('../components/features/project/apply/schema.ts');
-const server = setupServer(...projectWeek6Handlers);
+const server = setupServer(...handlers);
 const payload = {
   jobPositionCode: 'JAVA_SPRING',
   motivation: '함께 안정적인 서비스를 만들고 싶습니다.',
@@ -90,14 +106,14 @@ test('application form contract resolves role names and applicant skills', async
 });
 test('submit, list, own detail, cancel and refreshed list follow API contract', async () => {
   const result = await api.submitApplication(102, payload);
-  assert.equal(result.status, 'PENDING');
+  assert.equal(result.status, 'pending');
   assert.equal((await api.getMyApplications()).length, 1);
   assert.equal(
-    (await api.getApplicationDetail(102, result.applicationId)).motivation,
+    (await api.getApplicationDetail(102, result.applicationId)).introduction,
     payload.motivation,
   );
   await api.cancelApplication(result.applicationId);
-  assert.equal((await api.getMyApplications())[0].status, 'CANCELLED');
+  assert.equal((await api.getMyApplications())[0].status, 'cancelled');
   await assert.rejects(api.cancelApplication(result.applicationId), /대기 중/);
   await assert.rejects(api.submitApplication(102, payload), /이미 신청/);
 });
@@ -108,10 +124,16 @@ test('duplicate submission is rejected without adding another record', async () 
 });
 test('leader and member cannot apply', async () => {
   storage.setSession(2);
-  await assert.rejects(api.submitApplication(102, payload), (error) => error.status === 403);
+  await assert.rejects(
+    api.submitApplication(102, payload),
+    (error) => error.name === 'PermissionDeniedError',
+  );
   storage.setSession(1);
   changeProject((project) => ({ ...project, memberIds: [1] }));
-  await assert.rejects(api.submitApplication(102, payload), (error) => error.status === 403);
+  await assert.rejects(
+    api.submitApplication(102, payload),
+    (error) => error.name === 'PermissionDeniedError',
+  );
 });
 test('closed, suspended and past-deadline projects reject applications', async () => {
   for (const change of [
@@ -131,7 +153,7 @@ test('full positions reject applications', async () => {
   await assert.rejects(api.submitApplication(102, payload), /인원이 모두/);
 });
 test('missing project and unavailable role are rejected', async () => {
-  await assert.rejects(api.submitApplication(999999, payload), (error) => error.status === 404);
+  await assert.rejects(api.submitApplication(999999, payload), /찾을 수 없습니다/);
   await assert.rejects(
     api.submitApplication(102, { ...payload, jobPositionCode: 'WEB_FRONTEND' }),
     /현재 모집/,
@@ -143,11 +165,11 @@ test('another user cannot view or cancel an application', async () => {
   assert.equal((await api.getMyApplications()).length, 0);
   await assert.rejects(
     api.getApplicationDetail(102, result.applicationId),
-    (error) => error.status === 403,
+    (error) => error.name === 'PermissionDeniedError',
   );
   await assert.rejects(
     api.cancelApplication(result.applicationId),
-    (error) => error.status === 403,
+    (error) => error.name === 'PermissionDeniedError',
   );
 });
 test('non-pending application cannot be cancelled', async () => {
@@ -161,7 +183,7 @@ test('server and network failures do not create applications', async () => {
       ...payload,
       motivation: '서버오류 테스트를 위한 충분한 지원 동기입니다.',
     }),
-    (error) => error.status === 500,
+    /서버 오류/,
   );
   await assert.rejects(
     api.submitApplication(102, {

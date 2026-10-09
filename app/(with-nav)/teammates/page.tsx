@@ -1,5 +1,5 @@
-import MemberDirectory from '@/components/features/team/MemberDirectory';
+import TeammatesPage from '@/components/features/team/TeammatesPage';
 
 export default function Page() {
-  return <MemberDirectory />;
+  return <TeammatesPage />;
 }

@@ -1,5 +1,12 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import RequireAuth from '@/components/features/auth/RequireAuth';
+import ProjectManageEdit from '@/components/features/project/manage/ProjectManageEdit';
 
-export default function Page() {
-  return <PlannedPage title="프로젝트 수정" />;
+export default async function Page({ params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+
+  return (
+    <RequireAuth>
+      <ProjectManageEdit projectId={projectId} />
+    </RequireAuth>
+  );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { ReactNode, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
 interface PortalProps {
@@ -8,9 +8,19 @@ interface PortalProps {
 }
 
 export default function Portal({ children }: PortalProps) {
-  if (typeof document === 'undefined') {
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+
+  if (!mounted) {
     return null;
   }
 
   return createPortal(children, document.body);
+}
+
+function subscribe() {
+  return () => {};
 }

@@ -1,5 +1,7 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import { redirect } from 'next/navigation';
 
-export default function Page() {
-  return <PlannedPage title="팀원 관리" />;
+export default async function Page({ params }: { params: Promise<{ projectId: string }> }) {
+  const { projectId } = await params;
+
+  redirect(`/projects/${projectId}/manage`);
 }

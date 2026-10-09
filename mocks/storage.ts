@@ -1,6 +1,5 @@
 import { INITIAL_MEMBERS, INITIAL_PROJECTS, type MockMember } from '@/mocks/fixtures';
-import type { ProjectRecord } from '@/components/features/project/projectApi';
-import type { AppliedProject } from '@/components/features/project/applicationApi';
+import type { ProjectRecord, AppliedProject } from './projectContract';
 
 export type MockApplication = AppliedProject & { applicantId: number; motivation: string };
 const APPLICATIONS_KEY = 'meeteam-week6-applications';

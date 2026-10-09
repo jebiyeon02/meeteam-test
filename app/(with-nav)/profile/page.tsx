@@ -1,5 +1,10 @@
-import ProfileEditor from '@/components/features/profile/ProfileEditor';
+import RequireAuth from '@/components/features/auth/RequireAuth';
+import ProfileOverview from '@/components/features/profile/ProfileOverview';
 
 export default function Page() {
-  return <ProfileEditor />;
+  return (
+    <RequireAuth>
+      <ProfileOverview />
+    </RequireAuth>
+  );
 }

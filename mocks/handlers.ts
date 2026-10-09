@@ -1,12 +1,13 @@
 import { delay, http, HttpResponse } from 'msw';
 import { projectWeek6Handlers } from './projectWeek6Handlers';
-import { getLikes } from './storage';
+import { toProjectCard, toProjectDetail, toMemberCard, pageResponse } from './responseMappers';
 import { z } from 'zod';
 import { profileImageSchema } from '@/components/features/profile/schema';
 import {
   projectCoverSchema,
   projectCreateSchema,
-} from '@/components/features/project/create/schema';
+  backendProjectCreateSchema,
+} from './projectSchema';
 import { DEMO_PROJECTS, JOB_OPTIONS, type MockMember } from '@/mocks/fixtures';
 import {
   clearSession,
@@ -38,8 +39,8 @@ const profileUpdateSchema = z.object({
     .min(1),
   isParticipating: z.boolean(),
   introduction: z.string().max(1000),
-  githubUrl: z.string(),
-  blogUrl: z.string(),
+  githubUrl: z.string().default(''),
+  blogUrl: z.string().default(''),
 });
 
 const registrationSchema = z.object({
@@ -56,8 +57,8 @@ const registrationSchema = z.object({
       }),
     )
     .min(1),
-  githubUrl: z.string(),
-  blogUrl: z.string(),
+  githubUrl: z.string().default(''),
+  blogUrl: z.string().default(''),
 });
 
 function success<T>(result: T) {
@@ -101,8 +102,14 @@ function birthDateForAge(age: number) {
 
 function projectsFor(member: MockMember) {
   return (DEMO_PROJECTS[member.memberId] ?? []).map((project) => ({
-    ...project,
-    leader: member.name,
+    projectId: project.id,
+    projectName: project.title,
+    categoryName: project.category,
+    creatorName: member.name,
+    creatorImageUrl: null,
+    imageUrl: null,
+    currentCount: project.currentMembers,
+    recruitmentCount: project.maxMembers,
   }));
 }
 
@@ -174,6 +181,45 @@ function imageDataUrl(file: File | null): Promise<string | null> {
 
 export const handlers = [
   ...projectWeek6Handlers,
+  ...['/api/v1/members/search', '/api/v1/main/members'].map((url) =>
+    http.get(url, async ({ request }) => {
+      await delay(150);
+      const params = new URL(request.url).searchParams;
+      const name = params.get('name') ?? '';
+      const skills = params.getAll('techStackNames');
+      const fieldId = Number(params.get('jobFieldId'));
+      const fieldNames: Record<number, string> = { 2: '디자인', 3: '프론트', 4: '백엔드' };
+      const cards = getMembers()
+        .map(toMemberCard)
+        .filter(
+          (member) =>
+            member.name.includes(name) &&
+            (!fieldId || member.jobFieldName === fieldNames[fieldId]) &&
+            skills.every((skill) => member.techStacks.some((item) => item.name === skill)),
+        );
+      cards.sort((a, b) =>
+        params.get('sort')?.startsWith('realName')
+          ? a.name.localeCompare(b.name)
+          : b.projectCount - a.projectCount,
+      );
+      return success(pageResponse(cards, params));
+    }),
+  ),
+  http.get('/api/v1/notifications/unread/count', () =>
+    getSessionMember() ? success({ unreadCount: 0 }) : failure(401, '로그인이 필요합니다.'),
+  ),
+  http.get('/api/v1/notifications', ({ request }) =>
+    getSessionMember()
+      ? success(pageResponse([], new URL(request.url).searchParams))
+      : failure(401, '로그인이 필요합니다.'),
+  ),
+  http.get(
+    '/api/v1/subscribe',
+    () =>
+      new HttpResponse(': mock\nretry: 60000\n\n', {
+        headers: { 'Content-Type': 'text/event-stream' },
+      }),
+  ),
   http.post('/api/v1/auth/login/sejong', async ({ request }) => {
     const parsed = loginRequestSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return failure(400, '학번과 비밀번호를 입력해 주세요.');
@@ -322,7 +368,8 @@ export const handlers = [
     const member = getSessionMember();
     if (!member) return failure(401, '프로젝트 등록은 로그인 후 이용할 수 있어요.');
     const data = await request.formData();
-    const parsed = projectCreateSchema.safeParse(await jsonPart(data, 'request'));
+    const backend = backendProjectCreateSchema.safeParse(await jsonPart(data, 'request'));
+    const parsed = projectCreateSchema.safeParse(backend.success ? backend.data : null);
     if (!parsed.success)
       return failure(400, parsed.error.issues[0]?.message ?? '등록 정보를 확인해 주세요.');
     if (parsed.data.name === '등록실패')
@@ -355,18 +402,18 @@ export const handlers = [
     return success({ id: project.id });
   }),
 
-  http.get('/api/v1/projects/search', async ({ request }) => {
+  http.get(/\/api\/v1\/(projects\/search|main\/projects)(\?|$)/, async ({ request }) => {
     await delay(300);
     const params = new URL(request.url).searchParams;
     const keyword = (params.get('keyword') ?? '').trim().toLocaleLowerCase();
     if (keyword === '조회실패') return failure(500, '프로젝트 목록을 불러오지 못했습니다.');
     if (keyword === '네트워크오류') return HttpResponse.error();
-    const category = params.get('category') ?? '';
+    const category = params.get('projectCategory') ?? '';
     const jobField = params.get('jobField') ?? '';
     const techStackId = Number(params.get('techStackId'));
     const page = Math.max(0, Number(params.get('page')) || 0);
     const size = Math.min(20, Math.max(1, Number(params.get('size')) || 8));
-    const sort = params.get('sort') ?? 'latest';
+    const sort = params.get('sort') ?? 'LATEST';
     const filtered = getProjects().filter(
       (project) =>
         (!keyword ||
@@ -379,16 +426,21 @@ export const handlers = [
     filtered.sort((a, b) =>
       sort === 'name'
         ? a.name.localeCompare(b.name, 'ko')
-        : sort === 'deadline'
+        : sort === 'DEADLINE'
           ? (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999')
           : b.createdAt.localeCompare(a.createdAt),
     );
-    const content = filtered.slice(page * size, (page + 1) * size);
+    const content = filtered.slice(page * size, (page + 1) * size).map(toProjectCard);
     return success({
       content,
       totalElements: filtered.length,
       page,
       hasMore: (page + 1) * size < filtered.length,
+      number: page,
+      size,
+      empty: !content.length,
+      first: page === 0,
+      last: (page + 1) * size >= filtered.length,
     });
   }),
 
@@ -397,8 +449,7 @@ export const handlers = [
     const project = getProjects().find((item) => item.id === Number(params.projectId));
     return project
       ? success({
-          ...project,
-          likeCount: getLikes().filter((item) => item.endsWith(`:${project.id}`)).length,
+          ...toProjectDetail(project),
         })
       : failure(404, '프로젝트를 찾을 수 없습니다.');
   }),

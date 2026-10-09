@@ -2,7 +2,7 @@ export const JOB_OPTIONS = {
   fields: [
     {
       code: 'FRONTEND',
-      name: '프론트엔드',
+      name: '프론트',
       positions: [
         { id: 1, code: 'WEB_FRONTEND', name: '웹 프론트엔드' },
         { id: 2, code: 'CROSS_PLATFORM', name: '크로스 플랫폼' },
@@ -170,4 +170,4 @@ export const INITIAL_PROJECTS: ProjectRecord[] = PROJECT_SEEDS.map(
     };
   },
 );
-import type { ProjectRecord } from '@/components/features/project/projectApi';
+import type { ProjectRecord } from './projectContract';

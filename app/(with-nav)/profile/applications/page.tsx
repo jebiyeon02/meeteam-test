@@ -1,5 +1,10 @@
-import MyApplicationsPage from '@/components/features/project/apply/MyApplicationsPage';
+import RequireAuth from '@/components/features/auth/RequireAuth';
+import MyApplicationsPage from '@/components/features/profile/MyApplicationsPage';
 
 export default function Page() {
-  return <MyApplicationsPage />;
+  return (
+    <RequireAuth>
+      <MyApplicationsPage />
+    </RequireAuth>
+  );
 }

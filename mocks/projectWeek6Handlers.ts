@@ -1,7 +1,9 @@
 import { delay, http, HttpResponse } from 'msw';
 import { projectApplicationSchema } from '@/components/features/project/apply/schema';
-import { isProjectOpen, isRecruitmentOpen } from '@/components/features/project/applicationApi';
+import { isProjectOpen, isRecruitmentOpen } from './projectContract';
 import { JOB_OPTIONS } from './fixtures';
+import { getMembers } from './storage';
+import { toProjectDetail } from './responseMappers';
 import {
   getApplications,
   getProjects,
@@ -20,6 +22,57 @@ function failure(status: number, message: string, code = 'PROJECT_APPLICATION400
 const positions = JOB_OPTIONS.fields.flatMap((field) => field.positions);
 
 export const projectWeek6Handlers = [
+  http.get('/api/v1/projects/:projectId/team', ({ params }) => {
+    const member = getSessionMember();
+    if (!member) return failure(401, '로그인이 필요합니다.');
+    const project = getProjects().find((item) => item.id === Number(params.projectId));
+    if (!project) return failure(404, '프로젝트를 찾을 수 없습니다.');
+    if (project.leaderId !== member.memberId) return failure(403, '프로젝트 관리 권한이 없습니다.');
+    return success({
+      currentMemberCount: project.currentMembers,
+      totalRecruitmentCount: 1 + project.recruitments.reduce((sum, item) => sum + item.count, 0),
+      pendingApplicationCount: getApplications().filter(
+        (item) => item.projectId === project.id && item.status === 'PENDING',
+      ).length,
+      members: toProjectDetail(project).members.map((item) => ({
+        ...item,
+        jobFieldName: '',
+        jobPositionName: '',
+        isLeader: item.memberId === project.leaderId,
+      })),
+    });
+  }),
+  http.get('/api/v1/projects/:projectId/applications', ({ params }) => {
+    const member = getSessionMember();
+    if (!member) return failure(401, '로그인이 필요합니다.');
+    const project = getProjects().find((item) => item.id === Number(params.projectId));
+    if (!project) return failure(404, '프로젝트를 찾을 수 없습니다.');
+    if (project.leaderId !== member.memberId) return failure(403, '프로젝트 관리 권한이 없습니다.');
+    return success(
+      getApplications()
+        .filter((item) => item.projectId === project.id && item.status === 'PENDING')
+        .map((item) => {
+          const applicant = getMembers().find((member) => member.memberId === item.applicantId);
+          const recruitment = project.recruitments.find(
+            (recruitment) => recruitment.jobPositionId === item.jobPositionId,
+          );
+          return {
+            ...item,
+            applicantName: applicant?.name ?? '',
+            applicantEmail: applicant?.email ?? '',
+            profileImageUrl: applicant?.profileImageUrl ?? null,
+            jobFieldName:
+              JOB_OPTIONS.fields.find((field) =>
+                field.positions.some((position) => position.id === item.jobPositionId),
+              )?.name ?? '',
+            currentCount: recruitment?.currentCount ?? 0,
+            recruitmentCount: recruitment?.count ?? 0,
+            isRecruitmentFull:
+              !!recruitment && (recruitment.currentCount ?? 0) >= recruitment.count,
+          };
+        }),
+    );
+  }),
   http.get('/api/v1/projects/:projectId/application', async ({ params }) => {
     await delay(150);
     const member = getSessionMember();
@@ -135,6 +188,13 @@ export const projectWeek6Handlers = [
       applicantId: member.memberId,
       applicantName: member.name,
       applicantEmail: member.email,
+      profileImageUrl: member.profileImageUrl,
+      age: new Date().getFullYear() - Number(member.birthDate.slice(0, 4)),
+      gender: member.gender,
+      techStacks: JOB_OPTIONS.fields
+        .flatMap((field) => field.techStacks)
+        .filter((skill) => member.techStackIds.includes(skill.id))
+        .map((skill, index) => ({ ...skill, displayOrder: index + 1 })),
       motivation: application.motivation,
       status: application.status,
       jobPosition: {

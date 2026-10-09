@@ -1,5 +1,10 @@
-import PlannedPage from '@/components/features/home/PlannedPage';
+import RequireAuth from '@/components/features/auth/RequireAuth';
+import NotificationsPage from '@/components/features/notification/NotificationsPage';
 
 export default function Page() {
-  return <PlannedPage title="알림" />;
+  return (
+    <RequireAuth>
+      <NotificationsPage />
+    </RequireAuth>
+  );
 }

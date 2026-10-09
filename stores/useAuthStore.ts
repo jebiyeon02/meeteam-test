@@ -1,49 +1,80 @@
 'use client';
 
-import { create } from 'zustand';
-import { ApiError } from '@/components/features/auth/authApi';
-import { getMyProfile } from '@/components/features/profile/profileApi';
+import type { AuthSession } from '@/types/auth';
 
-export type AuthUser = { memberId: number; name: string };
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+
+export const AUTH_STORAGE_KEY = 'meeteam-auth-storage';
 
 type AuthState = {
-  isSessionReady: boolean;
+  memberId: number | null;
+  name: string | null;
+  email: string | null;
   isAuthenticated: boolean;
-  sessionError: string | null;
-  user: AuthUser | null;
-  restoreSession: () => Promise<void>;
-  setUser: (user: AuthUser) => void;
+  isLoggingOut: boolean;
+  isSessionRestoring: boolean;
+  setSession: (session: AuthSession) => void;
+  setProfileIdentity: (identity: { name?: string | null; email?: string | null }) => void;
+  beginSessionRestore: () => void;
+  finishSessionRestore: () => void;
+  beginLogout: () => void;
+  finishLogout: () => void;
   clearSession: () => void;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isSessionReady: false,
+const INITIAL_SESSION_STATE = {
+  memberId: null,
+  name: null,
+  email: null,
   isAuthenticated: false,
-  sessionError: null,
-  user: null,
-  restoreSession: async () => {
-    set({ isSessionReady: false, sessionError: null });
-    try {
-      const profile = await getMyProfile();
-      set({
-        isSessionReady: true,
-        isAuthenticated: true,
-        user: { memberId: profile.memberId, name: profile.name },
-      });
-    } catch (error) {
-      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-        set({ isSessionReady: true, isAuthenticated: false, user: null });
-        return;
-      }
-      set({
-        isSessionReady: true,
-        isAuthenticated: false,
-        user: null,
-        sessionError: '로그인 상태를 확인하지 못했습니다. 다시 시도해 주세요.',
-      });
-    }
-  },
-  setUser: (user) => set({ isSessionReady: true, isAuthenticated: true, sessionError: null, user }),
-  clearSession: () =>
-    set({ isSessionReady: true, isAuthenticated: false, sessionError: null, user: null }),
-}));
+};
+
+const INITIAL_STATE = {
+  ...INITIAL_SESSION_STATE,
+  isLoggingOut: false,
+  isSessionRestoring: true,
+};
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      ...INITIAL_STATE,
+      setSession: (session) =>
+        set({
+          memberId: session.memberId,
+          name: session.name,
+          email: session.email,
+          isAuthenticated: true,
+          isLoggingOut: false,
+          isSessionRestoring: false,
+        }),
+      setProfileIdentity: ({ name, email }) =>
+        set((state) => ({
+          ...state,
+          name: name ?? state.name,
+          email: email ?? state.email,
+        })),
+      beginSessionRestore: () => set({ isSessionRestoring: true }),
+      finishSessionRestore: () => set({ isSessionRestoring: false }),
+      beginLogout: () => set({ isLoggingOut: true }),
+      finishLogout: () => set({ isLoggingOut: false }),
+      clearSession: () =>
+        set((state) => ({
+          ...INITIAL_SESSION_STATE,
+          isLoggingOut: state.isLoggingOut,
+          isSessionRestoring: false,
+        })),
+    }),
+    {
+      name: AUTH_STORAGE_KEY,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        memberId: state.memberId,
+        name: state.name,
+        email: state.email,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    },
+  ),
+);

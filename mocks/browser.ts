@@ -8,7 +8,9 @@ export function startMockWorker() {
   startPromise ??= worker
     .start({
       serviceWorker: { url: '/mockServiceWorker.js' },
-      onUnhandledRequest: 'bypass',
+      onUnhandledRequest(request, print) {
+        if (new URL(request.url).pathname.startsWith('/api/')) print.error();
+      },
     })
     .then(() => undefined);
   return startPromise;

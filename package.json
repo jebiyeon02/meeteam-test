@@ -2,23 +2,30 @@
   "name": "meeteam-front-new",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@icons-pack/react-simple-icons": "^13.13.0",
+    "@svgr/webpack": "^8.1.0",
     "@tanstack/react-query": "^5.90.21",
     "lucide-react": "^0.563.0",
     "msw": "^2.15.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-easy-crop": "^5.5.7",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
@@ -36,7 +43,8 @@
     "@storybook/nextjs-vite": "^10.2.8",
     "@storybook/addon-docs": "^10.2.8",
     "@storybook/addon-a11y": "^10.2.8",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   },
   "msw": {
     "workerDirectory": [

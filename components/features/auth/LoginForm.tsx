@@ -1,127 +1,217 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { Check, Lock, UserRound } from 'lucide-react';
+
 import BaseButton from '@/components/shared/BaseButton';
-import BaseField from '@/components/shared/BaseField';
 import BaseInput from '@/components/shared/BaseInput';
-import { loginSejong } from '@/components/features/auth/authApi';
-import { loginSchema } from '@/components/features/auth/schema';
-import { getMyProfile } from '@/components/features/profile/profileApi';
+import ToastMessage from '@/components/shared/ToastMessage';
+import { fetchMyProfile } from '@/components/features/profile/profileApi';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { useToastStore } from '@/stores/useToastStore';
+import type { LoginFormValues } from '@/types/auth';
 
-function getReturnPath() {
-  const path = new URLSearchParams(window.location.search).get('next');
-  return path?.startsWith('/') && !path.startsWith('//') ? path : '/profile';
-}
+import { loginMember } from './loginApi';
+import { saveSejongOnboardingCode } from './sejongOnboardingStorage';
+import { loginFormSchema, type LoginFieldErrors } from './schema';
 
-export default function LoginForm() {
+const INITIAL_FORM_VALUES: LoginFormValues = {
+  studentId: '',
+  password: '',
+};
+
+type LoginFormProps = {
+  redirectPath?: string;
+  onSuccess?: () => void | Promise<void>;
+  onSignupRequired?: (signupPath: string) => void | Promise<void>;
+};
+
+export default function LoginForm({
+  redirectPath = '/',
+  onSuccess,
+  onSignupRequired,
+}: LoginFormProps) {
+  const pathname = usePathname();
   const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
-  const showToast = useToastStore((state) => state.showToast);
-  const isMockMode = process.env.NEXT_PUBLIC_API_MODE === 'mock';
-  const [studentId, setStudentId] = useState(isMockMode ? '20260001' : '');
-  const [password, setPassword] = useState(isMockMode ? 'demo1234' : '');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const setSession = useAuthStore((state) => state.setSession);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const [formValues, setFormValues] = useState<LoginFormValues>(INITIAL_FORM_VALUES);
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConsentChecked, setIsConsentChecked] = useState(false);
+
+  const validateForm = () => {
+    const result = loginFormSchema.safeParse(formValues);
+
+    if (result.success) {
+      setFieldErrors({});
+      return true;
+    }
+
+    const flattened = result.error.flatten().fieldErrors;
+    setFieldErrors({
+      studentId: flattened.studentId?.[0],
+      password: flattened.password?.[0],
+      agreement: undefined,
+    });
+    return false;
+  };
+
+  const updateField = <K extends keyof LoginFormValues>(key: K, value: LoginFormValues[K]) => {
+    setFormValues((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined, form: undefined }));
+  };
+
+  const updateConsent = (checked: boolean) => {
+    setIsConsentChecked(checked);
+    setFieldErrors((prev) => ({ ...prev, agreement: undefined, form: undefined }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const parsed = loginSchema.safeParse({ studentId, password });
-    if (!parsed.success) {
-      setErrors(
-        Object.fromEntries(parsed.error.issues.map((issue) => [issue.path[0], issue.message])),
-      );
+
+    if (!validateForm()) {
       return;
     }
 
-    setErrors({});
     setIsSubmitting(true);
+
     try {
-      const result = await loginSejong(parsed.data.studentId, parsed.data.password);
+      const result = await loginMember(formValues);
+
       if (result.isNewMember) {
-        if (!result.code) throw new Error('회원가입 인증 코드를 받지 못했습니다.');
-        sessionStorage.setItem('sejongRegistrationCode', result.code);
-        router.push('/auth/sign-up/sejong');
+        if (!result.code) {
+          throw new Error('회원가입용 인증 코드가 없습니다. 다시 시도해 주세요.');
+        }
+
+        saveSejongOnboardingCode(result.code);
+        const signupPath = '/auth/sign-up/sejong';
+
+        if (onSignupRequired) {
+          await onSignupRequired(signupPath);
+        } else {
+          router.push(signupPath);
+        }
+
         return;
       }
-      const profile = await getMyProfile();
-      setUser({ memberId: profile.memberId, name: profile.name });
-      showToast({ tone: 'success', message: '로그인했습니다.' });
-      router.replace(getReturnPath());
+
+      const profile = await fetchMyProfile();
+      setSession({
+        memberId: profile.memberId,
+        name: profile.name,
+        email: profile.email,
+      });
+      await onSuccess?.();
+
+      if (redirectPath !== pathname) {
+        router.replace(redirectPath);
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : '로그인에 실패했습니다.';
-      setErrors({ form: message });
-      showToast({ tone: 'error', message });
+      setFieldErrors({
+        form: error instanceof Error ? error.message : '로그인에 실패했습니다.',
+      });
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return (
-    <section className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-mt-border bg-mt-white p-6 sm:p-8">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">{isMockMode ? '데모 로그인' : '세종대 로그인'}</h1>
-        <p className="text-sm text-mt-text-secondary">
-          {isMockMode
-            ? '현재는 MSW 데모입니다. 실제 포털 계정 정보를 입력하지 마세요.'
-            : '입력한 학번과 비밀번호는 연결된 세종대 로그인 API로 전송됩니다.'}
-        </p>
-        {isMockMode && (
-          <p className="rounded-xl bg-mt-bg-soft p-3 text-sm text-mt-text-secondary">
-            기존 회원: 20260001 / demo1234
-            <br />
-            신규 가입 체험: 20260002 / demo1234
+    <form
+      className="flex w-full flex-col gap-5"
+      noValidate
+      onSubmit={handleSubmit}
+      data-cy="login-form"
+    >
+      <ToastMessage message={fieldErrors.form} />
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="studentId" className="font-bold text-mt-text-primary">
+          학번
+        </label>
+        <BaseInput
+          id="studentId"
+          type="text"
+          value={formValues.studentId}
+          onChange={(event) => updateField('studentId', event.target.value)}
+          leftIcon={<UserRound className="h-5 w-5" strokeWidth={1.8} />}
+          placeholder="학번을 입력해 주세요"
+          autoComplete="username"
+          aria-invalid={Boolean(fieldErrors.studentId)}
+          data-cy="login-student-id"
+        />
+        {fieldErrors.studentId ? (
+          <p className="text-sm text-mt-hero-blue" role="alert">
+            {fieldErrors.studentId}
           </p>
-        )}
+        ) : null}
       </div>
-      <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5" noValidate>
-        <BaseField
-          label={isMockMode ? '데모 학번' : '세종대 학번'}
-          htmlFor="studentId"
-          errorText={errors.studentId}
-        >
-          <BaseInput
-            id="studentId"
-            autoComplete="username"
-            value={studentId}
-            onChange={(event) => setStudentId(event.target.value)}
-            aria-invalid={Boolean(errors.studentId)}
-          />
-        </BaseField>
-        <BaseField
-          label={isMockMode ? '데모 비밀번호' : '포털 비밀번호'}
-          htmlFor="password"
-          errorText={errors.password}
-        >
-          <BaseInput
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            aria-invalid={Boolean(errors.password)}
-          />
-        </BaseField>
-        {errors.form && (
-          <p role="alert" className="text-sm text-mt-danger">
-            {errors.form}
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="password" className="font-bold text-mt-text-primary">
+          비밀번호
+        </label>
+        <BaseInput
+          id="password"
+          type="password"
+          value={formValues.password}
+          onChange={(event) => updateField('password', event.target.value)}
+          leftIcon={<Lock className="h-5 w-5" strokeWidth={1.8} />}
+          placeholder="••••••••"
+          autoComplete="current-password"
+          aria-invalid={Boolean(fieldErrors.password)}
+          data-cy="login-password"
+        />
+        {fieldErrors.password ? (
+          <p className="text-sm text-mt-hero-blue" role="alert">
+            {fieldErrors.password}
           </p>
-        )}
-        <BaseButton type="submit" full disabled={isSubmitting}>
-          {isSubmitting ? '로그인 중...' : '로그인'}
-        </BaseButton>
-      </form>
-      {isMockMode && (
-        <p className="text-center text-sm text-mt-text-secondary">
-          신규 가입 화면은 위의 신규 가입 데모 학번으로 로그인하면 열립니다.
-        </p>
-      )}
-      <Link href="/" className="block text-center text-sm font-semibold text-mt-primary">
-        홈으로 돌아가기
-      </Link>
-    </section>
+        ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-mt-border bg-mt-bg-soft px-4 py-3">
+        <label className="flex cursor-pointer items-start gap-3" htmlFor="login-consent">
+          <span className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
+            <input
+              id="login-consent"
+              type="checkbox"
+              checked={isConsentChecked}
+              onChange={(event) => updateConsent(event.target.checked)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  updateConsent(!isConsentChecked);
+                }
+              }}
+              className="peer sr-only"
+              data-cy="login-consent"
+            />
+            <span className="flex h-5 w-5 items-center justify-center rounded-md border border-mt-border bg-mt-white text-mt-white transition-colors peer-checked:border-mt-primary peer-checked:bg-mt-primary peer-focus-visible:ring-2 peer-focus-visible:ring-mt-logo-blue/20">
+              <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
+            </span>
+          </span>
+          <span className="flex flex-col gap-1">
+            <span className="text-sm leading-5 font-semibold text-mt-text-primary">
+              비밀번호는 저장하지 않으며, 로그인 후 학교 포털에서 로그아웃됩니다.
+            </span>
+          </span>
+        </label>
+        {fieldErrors.agreement ? (
+          <p className="mt-2 text-sm text-mt-hero-blue" role="alert">
+            {fieldErrors.agreement}
+          </p>
+        ) : null}
+      </div>
+
+      <BaseButton
+        size="L"
+        full={true}
+        type="submit"
+        disabled={isSubmitting || !isConsentChecked}
+        data-cy="login-submit"
+      >
+        {isSubmitting ? '로그인 중...' : '로그인'}
+      </BaseButton>
+    </form>
   );
 }
