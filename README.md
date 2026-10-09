@@ -16,7 +16,7 @@
 - `app/globals.css`: Tailwind 색상 토큰
 - `stories`: 컴포넌트 상태와 화면 구조를 따로 살펴보는 Storybook 예시
 
-기본 모드에서는 같은 출처의 `/api/v1/*` 및 `/api/project-members/*` 경유 경로가 실제 서버로 요청을 전달합니다. 세종대 로그인 정보는 이 경로를 거쳐 서버로 전송하며 비밀번호·토큰은 브라우저 `localStorage`에 저장하지 않습니다. 인증 헤더는 메모리에만 유지하고 쿠키를 포함하여 요청합니다. API 주소는 서버 전용 `MEETEAM_API_BASE_URL`로 바꿀 수 있습니다. 설정하지 않으면 `https://remedy-wrapping-mileage-circuits.trycloudflare.com`을 사용합니다.
+기본 모드에서는 같은 출처의 `/api/v1/*` 및 `/api/project-members/*` 경유 경로가 실제 서버로 요청을 전달합니다. 세종대 로그인 정보는 이 경로를 거쳐 서버로 전송하며 비밀번호·토큰은 브라우저 `localStorage`에 저장하지 않습니다. 인증 헤더는 메모리에만 유지하고 쿠키를 포함하여 요청합니다. API 주소는 서버 전용 `MEETEAM_API_BASE_URL`로 바꿀 수 있습니다. 설정하지 않으면 `https://cord-ours-bikini-society.trycloudflare.com`을 사용합니다.
 
 ## 실행
 

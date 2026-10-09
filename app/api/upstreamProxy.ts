@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_ORIGIN =
-  process.env.MEETEAM_API_BASE_URL ?? 'https://remedy-wrapping-mileage-circuits.trycloudflare.com';
+  process.env.MEETEAM_API_BASE_URL ?? 'https://cord-ours-bikini-society.trycloudflare.com';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 

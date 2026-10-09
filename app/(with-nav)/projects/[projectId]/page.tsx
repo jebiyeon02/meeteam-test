@@ -47,8 +47,7 @@ export async function generateMetadata({ params }: ProjectDetailPageParams): Pro
   try {
     const project = await fetchProjectDetail(
       projectId,
-      process.env.MEETEAM_API_BASE_URL ??
-        'https://remedy-wrapping-mileage-circuits.trycloudflare.com',
+      process.env.MEETEAM_API_BASE_URL ?? 'https://cord-ours-bikini-society.trycloudflare.com',
     );
     const title = `${project.title} | ${SITE_NAME}`;
     const description = buildDescription(project.description);
