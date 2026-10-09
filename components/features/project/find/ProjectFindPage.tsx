@@ -44,7 +44,7 @@ function isRecruiting(project: ProjectRecord) {
   );
 }
 
-function ProjectCard({ project }: { project: ProjectRecord }) {
+export function ProjectCard({ project }: { project: ProjectRecord }) {
   const stackCount = new Set(
     project.recruitments.flatMap((item) =>
       item.techStackNames?.length ? item.techStackNames : item.techStackIds.map(String),

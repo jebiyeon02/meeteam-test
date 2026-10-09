@@ -14,7 +14,6 @@
 - `mocks`: 선택적으로 실행할 수 있는 MSW 요청 핸들러와 데모 데이터
 - `components/features/{domain}/store.ts`: 도메인별 클라이언트 UI 상태
 - `app/globals.css`: Tailwind 색상 토큰
-- `app/(with-nav)/showcase`: 배포된 웹에서 볼 수 있는 공통 UI 쇼케이스
 - `stories`: 컴포넌트 상태와 화면 구조를 따로 살펴보는 Storybook 예시
 
 기본 모드에서는 같은 출처의 `/api/v1/*` 경유 경로가 실제 서버로 요청을 전달합니다. 세종대 로그인 정보는 이 경로를 거쳐 서버로 전송하며 브라우저 `localStorage`에 저장하지 않습니다. API 주소는 서버 전용 `MEETEAM_API_BASE_URL`로 바꿀 수 있습니다. 설정하지 않으면 현재 제공받은 trycloudflare 임시 주소를 사용합니다. 터널이 종료되면 연결도 끊기므로 안정적인 서버 주소로 교체해야 합니다.
@@ -30,7 +29,7 @@ npm run dev
 
 MSW 데모를 사용하려면 실행 전에 `NEXT_PUBLIC_API_MODE=mock`을 설정하세요. 이 모드에서는 `20260001` / `demo1234`로 로그인하고, `20260002` / `demo1234`로 가입을 체험할 수 있습니다. 데모 데이터는 브라우저 `localStorage`에만 저장됩니다.
 
-브라우저에서 `/showcase`로 이동하면 3주차 공통 UI를 직접 눌러볼 수 있습니다.
+메인은 실제 API의 최신 프로젝트와 팀원을 표시합니다. 공개 컴포넌트 쇼케이스 경로(`/showcase`)는 제거했으며, 공통 UI 확인은 개발용 Storybook에서 진행합니다.
 
 ## 6주차 상세·지원 기능
 
